@@ -131,7 +131,7 @@ export default function Home() {
 
           {/* User Content when logged in */}
           {user && (
-            <div className="w-full max-w-4xl bg-gray-800 bg-opacity-50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
+            <div className="w-full max-w-4xl bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
               <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">Welcome, Player!</h2>
               
               {/* Profile Section */}

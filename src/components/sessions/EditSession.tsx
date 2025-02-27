@@ -51,10 +51,10 @@ const EditSession: React.FC<EditSessionProps> = ({ session, onClose, onSessionUp
   };
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6 m-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-700 max-w-md w-full">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Session</h3>
+          <h3 className="text-xl font-bold">Edit Session</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 focus:outline-none"

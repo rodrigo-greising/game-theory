@@ -67,11 +67,11 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold mb-8 text-center">Game Dashboard</h1>
             
             {currentSession ? (
-              <div className="bg-gray-800 bg-opacity-50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
+              <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
                 <CurrentSession />
               </div>
             ) : (
-              <div className="bg-gray-800 bg-opacity-50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700 text-center">
+              <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700 text-center">
                 <h2 className="text-xl font-semibold mb-4">Not In a Session</h2>
                 <p className="text-gray-300 mb-6">You are currently not part of any game session.</p>
                 <Link 

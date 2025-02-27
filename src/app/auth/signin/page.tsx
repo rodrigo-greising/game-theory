@@ -29,16 +29,19 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md text-center">
-        <h2 className="text-2xl font-bold mb-6">Sign In</h2>
-        <p className="text-gray-600 mb-4">Redirecting to Google sign-in...</p>
-        <div className="h-8 w-8 border-t-4 border-b-4 border-blue-500 rounded-full animate-spin mx-auto"></div>
+      <div className="w-full max-w-md p-8 gaming-card">
+        <div className="w-16 h-16 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-6">
+          <span className="text-3xl font-bold text-white">G</span>
+        </div>
+        <h2 className="text-3xl font-bold mb-6 text-center gaming-heading">Sign In</h2>
+        <p className="text-gray-300 mb-6 text-center">Redirecting to Google sign-in...</p>
+        <div className="gaming-spinner mx-auto"></div>
       </div>
       
       <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-400">
           Don&apos;t have an account?{' '}
-          <Link href="/auth/signup" className="text-blue-600 hover:underline">
+          <Link href="/auth/signup" className="text-purple-400 hover:text-purple-300 hover:underline">
             Sign up
           </Link>
         </p>
