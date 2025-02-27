@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useSession, Player } from '@/context/SessionContext';
 import { StagHuntState, Choice, SCORING } from '@/games/stagHunt';
 import { useRouter } from 'next/navigation';
+import { ref, update } from 'firebase/database';
+import { database } from '@/config/firebaseClient';
 
 interface StagHuntGameProps {
   onGameUpdate?: (gameState: StagHuntState) => void;
@@ -236,6 +238,84 @@ const StagHuntGame: React.FC<StagHuntGameProps> = ({ onGameUpdate }) => {
       playerData: updatedPlayerData,
       history: Array.isArray(currentState.history) ? [...currentState.history, roundResult] : [roundResult]
     };
+    
+    // For tournament mode, update the tournament results in the session
+    if (currentSession.isTournament) {
+      try {
+        // Create updated tournament results
+        const tournamentResults = currentSession.tournamentResults ? { ...currentSession.tournamentResults } : {};
+        
+        // Update tournament stats for player 1
+        if (!tournamentResults[player1]) {
+          tournamentResults[player1] = {
+            playerId: player1,
+            totalScore: 0,
+            matchesPlayed: 0,
+            cooperateCount: 0,
+            defectCount: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0
+          };
+        }
+        
+        // Update tournament stats for player 2
+        if (!tournamentResults[player2]) {
+          tournamentResults[player2] = {
+            playerId: player2,
+            totalScore: 0,
+            matchesPlayed: 0,
+            cooperateCount: 0,
+            defectCount: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0
+          };
+        }
+        
+        // Update player 1's tournament stats
+        tournamentResults[player1].totalScore += score1;
+        // For Stag Hunt, track stag/hare choices like cooperate/defect in Prisoner's Dilemma
+        tournamentResults[player1].cooperateCount += choice1 === 'stag' ? 1 : 0;
+        tournamentResults[player1].defectCount += choice1 === 'hare' ? 1 : 0;
+        
+        // Update player 2's tournament stats
+        tournamentResults[player2].totalScore += score2;
+        tournamentResults[player2].cooperateCount += choice2 === 'stag' ? 1 : 0;
+        tournamentResults[player2].defectCount += choice2 === 'hare' ? 1 : 0;
+        
+        // If game is completed, update matches played and win/loss/draw counts
+        if (isLastRound) {
+          // Increment matches played
+          tournamentResults[player1].matchesPlayed += 1;
+          tournamentResults[player2].matchesPlayed += 1;
+          
+          // Determine winner
+          const totalScore1 = updatedPlayerData[player1].totalScore;
+          const totalScore2 = updatedPlayerData[player2].totalScore;
+          
+          if (totalScore1 > totalScore2) {
+            // Player 1 wins
+            tournamentResults[player1].wins += 1;
+            tournamentResults[player2].losses += 1;
+          } else if (totalScore1 < totalScore2) {
+            // Player 2 wins
+            tournamentResults[player1].losses += 1;
+            tournamentResults[player2].wins += 1;
+          } else {
+            // Draw
+            tournamentResults[player1].draws += 1;
+            tournamentResults[player2].draws += 1;
+          }
+        }
+        
+        // Update the tournament results in the database
+        const sessionRef = ref(database, `sessions/${currentSession.id}`);
+        await update(sessionRef, { tournamentResults });
+      } catch (error) {
+        console.error('Error updating tournament results:', error);
+      }
+    }
     
     // Update the game state
     await updateGameState(updatedGameState);

@@ -14,6 +14,7 @@ const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
   const [selectedGameId, setSelectedGameId] = useState<string>('');
   const [gameOptions, setGameOptions] = useState<GameOption[]>([]);
   const [selectedGame, setSelectedGame] = useState<GameOption | null>(null);
+  const [isTournament, setIsTournament] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -59,8 +60,9 @@ const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
     setError(null);
     
     try {
-      const sessionId = await createSession(sessionName, selectedGameId);
+      const sessionId = await createSession(sessionName, selectedGameId, isTournament);
       setSessionName('');
+      setIsTournament(false);
       
       if (onSessionCreated) {
         onSessionCreated(sessionId);
@@ -93,7 +95,7 @@ const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
           />
         </div>
         
-        <div className="mb-6">
+        <div className="mb-4">
           <label htmlFor="gameSelect" className="block text-sm font-medium text-gray-300 mb-1">
             Select Game
           </label>
@@ -117,16 +119,43 @@ const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
           </select>
         </div>
         
+        <div className="mb-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="tournamentMode"
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+              checked={isTournament}
+              onChange={(e) => setIsTournament(e.target.checked)}
+            />
+            <label htmlFor="tournamentMode" className="ml-2 block text-sm text-gray-300">
+              Create as Tournament (Classroom Mode)
+            </label>
+          </div>
+          {isTournament && (
+            <p className="mt-2 text-xs text-gray-400">
+              Tournament mode will randomly pair players and track results across all matches.
+              Great for classrooms or large groups!
+            </p>
+          )}
+        </div>
+        
         {/* Game Description and Rules */}
         {selectedGame && (
           <div className="mb-6 p-4 bg-gray-700 rounded-lg">
             <h4 className="font-medium text-purple-400 mb-2">{selectedGame.name}</h4>
             <p className="text-sm text-gray-300 mb-3">{selectedGame.description}</p>
             <div className="text-xs text-gray-400">
-              Players: {selectedGame.minPlayers === selectedGame.maxPlayers 
-                ? `Exactly ${selectedGame.minPlayers}` 
-                : `${selectedGame.minPlayers}-${selectedGame.maxPlayers}`
-              }
+              {isTournament ? (
+                <span>Tournament mode: Players will be paired randomly</span>
+              ) : (
+                <span>
+                  Players: {selectedGame.minPlayers === selectedGame.maxPlayers 
+                    ? `Exactly ${selectedGame.minPlayers}` 
+                    : `${selectedGame.minPlayers}-${selectedGame.maxPlayers}`
+                  }
+                </span>
+              )}
             </div>
           </div>
         )}

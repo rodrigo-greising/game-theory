@@ -7,10 +7,11 @@ import { useRouter } from 'next/navigation';
 import GameInfo from '@/components/games/GameInfo';
 
 const CurrentSession: React.FC = () => {
-  const { currentSession, leaveSession, startGame, resetGame, loading } = useSession();
+  const { currentSession, leaveSession, startGame, resetGame, shuffleMatches, loading } = useSession();
   const { user } = useAuth();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [shuffling, setShuffling] = useState(false);
   
   useEffect(() => {
     if (currentSession && currentSession.status === 'playing') {
@@ -44,6 +45,21 @@ const CurrentSession: React.FC = () => {
     }
   };
   
+  const handleShuffleMatches = async () => {
+    if (!currentSession?.isTournament) return;
+    
+    setShuffling(true);
+    try {
+      await shuffleMatches();
+      // After shuffling, redirect to the game page
+      router.push('/game');
+    } catch (error) {
+      console.error('Error shuffling matches:', error);
+    } finally {
+      setShuffling(false);
+    }
+  };
+  
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -65,6 +81,7 @@ const CurrentSession: React.FC = () => {
   
   const players = currentSession.players ? Object.values(currentSession.players) : [];
   const isHost = currentSession.players[user?.uid || '']?.isHost;
+  const isTournament = currentSession.isTournament;
   
   const handleLeaveSession = async () => {
     try {
@@ -107,6 +124,11 @@ const CurrentSession: React.FC = () => {
                 Completed
               </span>
             )}
+            {isTournament && (
+              <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                Tournament
+              </span>
+            )}
           </h3>
           
           <div className="flex space-x-2">
@@ -114,20 +136,42 @@ const CurrentSession: React.FC = () => {
               <button
                 onClick={handleStartGame}
                 className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1 rounded-md"
-                disabled={players.length < 2}
-                title={players.length < 2 ? "Need at least 2 players to start" : "Start the game"}
+                disabled={!isTournament && players.length < 2}
+                title={!isTournament && players.length < 2 ? "Need at least 2 players to start" : "Start the game"}
               >
-                Start Game
+                Start {isTournament ? 'Tournament' : 'Game'}
               </button>
             )}
             
             {isHost && currentSession.status === 'finished' && (
-              <button
-                onClick={handleResetGame}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md"
-              >
-                Reset Game
-              </button>
+              <>
+                <button
+                  onClick={handleResetGame}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md"
+                >
+                  Reset Game
+                </button>
+                
+                {isTournament && (
+                  <button
+                    onClick={handleShuffleMatches}
+                    className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded-md flex items-center"
+                    disabled={shuffling}
+                  >
+                    {shuffling ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Shuffling...
+                      </>
+                    ) : (
+                      'Shuffle Matches'
+                    )}
+                  </button>
+                )}
+              </>
             )}
             
             <button
@@ -200,18 +244,52 @@ const CurrentSession: React.FC = () => {
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 text-center">
           {isHost ? (
             <>
-              <button 
-                onClick={handleResetGame} 
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium mr-4"
-              >
-                Reset Game
-              </button>
-              <button 
-                onClick={handleLeaveSession} 
-                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium"
-              >
-                Leave Session
-              </button>
+              {isTournament ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900 dark:bg-opacity-20 rounded-lg">
+                    <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-2">Tournament Options</h4>
+                    <p className="text-sm text-purple-600 dark:text-purple-300 mb-4">
+                      You can reset the current matches or shuffle to create new random player pairings.
+                    </p>
+                    <div className="flex justify-center space-x-4">
+                      <button 
+                        onClick={handleShuffleMatches} 
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
+                        disabled={shuffling}
+                      >
+                        {shuffling ? 'Shuffling...' : 'Shuffle Matches'}
+                      </button>
+                      <button 
+                        onClick={handleResetGame} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+                      >
+                        Reset Current Matches
+                      </button>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleLeaveSession} 
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium"
+                  >
+                    Leave Tournament
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={handleResetGame} 
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium mr-4"
+                  >
+                    Reset Game
+                  </button>
+                  <button 
+                    onClick={handleLeaveSession} 
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium"
+                  >
+                    Leave Session
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <button 

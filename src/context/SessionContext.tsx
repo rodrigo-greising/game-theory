@@ -26,6 +26,21 @@ export interface GameSession {
   players: Record<string, Player>;
   status: 'waiting' | 'playing' | 'finished';
   gameData?: GameSessionData; // Add game data to the session
+  // Tournament-specific properties
+  isTournament?: boolean;
+  playerMatches?: Record<string, string>; // Maps a player to their current opponent player ID
+  tournamentResults?: Record<string, TournamentPlayerResult>; // Aggregated results for tournament leaderboard
+}
+
+export interface TournamentPlayerResult {
+  playerId: string;
+  totalScore: number;
+  matchesPlayed: number;
+  cooperateCount: number;
+  defectCount: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
 export interface Player {
@@ -39,7 +54,7 @@ export interface SessionContextType {
   sessions: GameSession[];
   currentSession: GameSession | null;
   currentUser: any;
-  createSession: (sessionName: string, gameId: string) => Promise<string>;
+  createSession: (sessionName: string, gameId: string, isTournament?: boolean) => Promise<string>;
   joinSession: (sessionId: string) => Promise<void>;
   leaveSession: () => Promise<void>;
   startGame: () => Promise<void>;
@@ -48,6 +63,7 @@ export interface SessionContextType {
   updateGameState: (newGameState: any) => Promise<void>;
   finishGame: () => Promise<void>;
   resetGame: () => Promise<void>;
+  shuffleMatches: () => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -112,7 +128,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   }, [user]);
 
   // Create a new session
-  const createSession = async (sessionName: string, gameId: string): Promise<string> => {
+  const createSession = async (sessionName: string, gameId: string, isTournament?: boolean): Promise<string> => {
     if (!user) throw new Error('User must be authenticated to create a session');
     
     // Validate game exists
@@ -144,7 +160,10 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
           gameId: gameId,
           gameState: game.getDefaultGameState(),
           settings: {}
-        }
+        },
+        isTournament,
+        playerMatches: {},
+        tournamentResults: {}
       };
       
       await set(newSessionRef, newSession);
@@ -265,49 +284,130 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
         throw new Error('Game data is missing');
       }
       
-      if (!isValidPlayerCount(currentSession.gameData.gameId, currentPlayerCount)) {
-        throw new Error(`This game requires between ${getGameById(currentSession.gameData.gameId)?.minPlayers} and ${getGameById(currentSession.gameData.gameId)?.maxPlayers} players`);
-      }
-      
       // Get the game and initialize game state
       const game = getGameById(currentSession.gameData.gameId);
       if (!game) {
         throw new Error('Game not found in registry');
       }
       
+      // For tournament mode, check if we have at least 2 players
+      if (currentSession.isTournament) {
+        if (currentPlayerCount < 2) {
+          throw new Error('Tournament mode requires at least 2 players');
+        }
+      } else {
+        // For regular mode, validate player count against game requirements
+        if (!isValidPlayerCount(currentSession.gameData.gameId, currentPlayerCount)) {
+          throw new Error(`This game requires between ${game.minPlayers} and ${game.maxPlayers} players`);
+        }
+      }
+      
       // Initialize playerData with all current players
       const playerIds = Object.keys(currentSession.players);
       const initialGameState = game.getDefaultGameState();
       
-      // For Prisoner's Dilemma, initialize player data with scores of 0
-      if (game.id === 'prisoners-dilemma') {
-        const playerData: Record<string, any> = {};
+      if (currentSession.isTournament) {
+        // Tournament mode: Create random pairings of players
+        const shuffledPlayerIds = [...playerIds].sort(() => Math.random() - 0.5);
+        const playerMatches: Record<string, string> = {};
+        const tournamentResults: Record<string, TournamentPlayerResult> = {};
         
+        // Initialize tournament results for each player
         playerIds.forEach(playerId => {
-          playerData[playerId] = {
+          tournamentResults[playerId] = {
+            playerId,
             totalScore: 0,
-            ready: false
+            matchesPlayed: 0,
+            cooperateCount: 0,
+            defectCount: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0
           };
         });
         
-        initialGameState.playerData = playerData;
-        initialGameState.status = 'in_progress';
-        initialGameState.round = 1;
+        // Create pairs for as many players as possible
+        for (let i = 0; i < Math.floor(shuffledPlayerIds.length / 2) * 2; i += 2) {
+          const player1Id = shuffledPlayerIds[i];
+          const player2Id = shuffledPlayerIds[i + 1];
+          
+          playerMatches[player1Id] = player2Id;
+          playerMatches[player2Id] = player1Id;
+        }
         
-        // Ensure history is initialized as an array
-        if (!Array.isArray(initialGameState.history)) {
-          initialGameState.history = [];
+        // Handle odd player count - last player waits for next round
+        if (shuffledPlayerIds.length % 2 !== 0) {
+          const lastPlayerId = shuffledPlayerIds[shuffledPlayerIds.length - 1];
+          playerMatches[lastPlayerId] = 'waiting'; // Special value for waiting
         }
+        
+        // Initialize game state for prisoner's dilemma
+        if (game.id === 'prisoners-dilemma') {
+          // For each match, initialize player data with scores of 0
+          const playerData: Record<string, any> = {};
+          
+          // Only initialize playerData for players with active matches (not waiting)
+          Object.keys(playerMatches).forEach(playerId => {
+            if (playerMatches[playerId] !== 'waiting') {
+              playerData[playerId] = {
+                totalScore: 0,
+                ready: false
+              };
+            }
+          });
+          
+          initialGameState.playerData = playerData;
+          initialGameState.status = 'in_progress';
+          initialGameState.round = 1;
+          
+          // Ensure history is initialized as an array
+          if (!Array.isArray(initialGameState.history)) {
+            initialGameState.history = [];
+          }
+        }
+        
+        // Update session with player matches
+        await update(ref(database, `sessions/${currentSession.id}`), {
+          status: 'playing',
+          playerMatches,
+          tournamentResults,
+          gameData: {
+            ...currentSession.gameData,
+            gameState: initialGameState
+          }
+        });
+      } else {
+        // Regular mode: Single game with all players
+        // For Prisoner's Dilemma, initialize player data with scores of 0
+        if (game.id === 'prisoners-dilemma') {
+          const playerData: Record<string, any> = {};
+          
+          playerIds.forEach(playerId => {
+            playerData[playerId] = {
+              totalScore: 0,
+              ready: false
+            };
+          });
+          
+          initialGameState.playerData = playerData;
+          initialGameState.status = 'in_progress';
+          initialGameState.round = 1;
+          
+          // Ensure history is initialized as an array
+          if (!Array.isArray(initialGameState.history)) {
+            initialGameState.history = [];
+          }
+        }
+        
+        // Update session status to playing and set initial game state
+        await update(ref(database, `sessions/${currentSession.id}`), {
+          status: 'playing',
+          gameData: {
+            ...currentSession.gameData,
+            gameState: initialGameState
+          }
+        });
       }
-      
-      // Update session status to playing and set initial game state
-      await update(ref(database, `sessions/${currentSession.id}`), {
-        status: 'playing',
-        gameData: {
-          ...currentSession.gameData,
-          gameState: initialGameState
-        }
-      });
     } catch (error: any) {
       console.error('Error starting game:', error);
       setError(error.message);
@@ -429,28 +529,109 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   const resetGame = async (): Promise<void> => {
     if (!user || !currentSession) return;
     
+    // Verify user is the host
+    const isHost = currentSession.players[user.uid]?.isHost;
+    if (!isHost) {
+      throw new Error('Only the host can reset the game');
+    }
+    
     try {
-      // Verify user is the host
-      const isHost = currentSession.players[user.uid]?.isHost;
-      if (!isHost) {
-        throw new Error('Only the host can reset the game');
-      }
-      
-      // Update session status to waiting
+      // Reset session status to waiting
       await update(ref(database, `sessions/${currentSession.id}`), {
         status: 'waiting'
       });
-      
-      // Reset game state to default
-      const game = getGameById(currentSession.gameData?.gameId || '');
-      if (game) {
-        const defaultGameState = game.getDefaultGameState();
-        await update(ref(database, `sessions/${currentSession.id}/gameData`), {
-          gameState: defaultGameState
-        });
-      }
     } catch (error: any) {
       console.error('Error resetting game:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+  
+  // Shuffle player matches in a tournament session
+  const shuffleMatches = async (): Promise<void> => {
+    if (!user || !currentSession) return;
+    
+    // Verify user is the host
+    const isHost = currentSession.players[user.uid]?.isHost;
+    if (!isHost) {
+      throw new Error('Only the host can shuffle matches');
+    }
+    
+    // Ensure this is a tournament session
+    if (!currentSession.isTournament) {
+      throw new Error('Shuffle matches is only available in tournament mode');
+    }
+    
+    try {
+      // Get current players
+      const playerIds = Object.keys(currentSession.players || {});
+      
+      if (playerIds.length < 2) {
+        throw new Error('At least 2 players are required to shuffle matches');
+      }
+      
+      // Create a randomly shuffled array of player IDs
+      const shuffledPlayerIds = [...playerIds].sort(() => Math.random() - 0.5);
+      const playerMatches: Record<string, string> = {};
+      
+      // Create pairs for as many players as possible
+      for (let i = 0; i < Math.floor(shuffledPlayerIds.length / 2) * 2; i += 2) {
+        const player1Id = shuffledPlayerIds[i];
+        const player2Id = shuffledPlayerIds[i + 1];
+        
+        playerMatches[player1Id] = player2Id;
+        playerMatches[player2Id] = player1Id;
+      }
+      
+      // Handle odd player count - last player waits for next round
+      if (shuffledPlayerIds.length % 2 !== 0) {
+        const lastPlayerId = shuffledPlayerIds[shuffledPlayerIds.length - 1];
+        playerMatches[lastPlayerId] = 'waiting'; // Special value for waiting
+      }
+      
+      // Reset the game state for all players
+      const game = getGameById(currentSession.gameData?.gameId || '');
+      if (!game) {
+        throw new Error('Game not found in registry');
+      }
+      
+      const initialGameState = game.getDefaultGameState();
+      
+      // Initialize game state for prisoner's dilemma
+      if (game.id === 'prisoners-dilemma') {
+        // For each match, initialize player data with scores of 0
+        const playerData: Record<string, any> = {};
+        
+        // Only initialize playerData for players with active matches (not waiting)
+        Object.keys(playerMatches).forEach(playerId => {
+          if (playerMatches[playerId] !== 'waiting') {
+            playerData[playerId] = {
+              totalScore: 0,
+              ready: false
+            };
+          }
+        });
+        
+        initialGameState.playerData = playerData;
+        initialGameState.status = 'in_progress';
+        initialGameState.round = 1;
+        
+        // Ensure history is initialized as an array
+        if (!Array.isArray(initialGameState.history)) {
+          initialGameState.history = [];
+        }
+      }
+      
+      // Update session with new matches
+      await update(ref(database, `sessions/${currentSession.id}`), {
+        playerMatches,
+        gameData: {
+          ...currentSession.gameData,
+          gameState: initialGameState
+        }
+      });
+    } catch (error: any) {
+      console.error('Error shuffling matches:', error);
       setError(error.message);
       throw error;
     }
@@ -469,6 +650,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     updateGameState,
     finishGame,
     resetGame,
+    shuffleMatches,
     loading,
     error
   };
