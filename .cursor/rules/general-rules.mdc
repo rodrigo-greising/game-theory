@@ -1,0 +1,12 @@
+---
+description: General rules
+globs: 
+alwaysApply: true
+---
+We using: 
+
+typescrpit
+next.js
+tailwind
+firebase
+shadcn

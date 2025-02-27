@@ -1,0 +1,14 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "sessions": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$sessionId": {
+        ".read": "auth != null",
+        ".write": "auth != null || (root.child('sessions').child($sessionId).child('players').child(auth.uid).exists())"
+      }
+    }
+  }
+} 
