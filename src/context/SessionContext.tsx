@@ -46,6 +46,8 @@ export interface SessionContextType {
   updateSession: (sessionId: string, updates: Partial<Omit<GameSession, 'id' | 'createdBy' | 'players'>>) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   updateGameState: (newGameState: any) => Promise<void>;
+  finishGame: () => Promise<void>;
+  resetGame: () => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -259,45 +261,53 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       const currentPlayerCount = Object.keys(currentSession.players).length;
       
       // Validate against game constraints
-      if (currentSession.gameData && currentSession.gameData.gameId) {
-        if (!isValidPlayerCount(currentSession.gameData.gameId, currentPlayerCount)) {
-          throw new Error(`This game requires between ${getGameById(currentSession.gameData.gameId)?.minPlayers} and ${getGameById(currentSession.gameData.gameId)?.maxPlayers} players`);
-        }
-        
-        // Get the game and initialize game state
-        const game = getGameById(currentSession.gameData.gameId);
-        if (!game) {
-          throw new Error('Game not found in registry');
-        }
-        
-        // Initialize playerData with all current players
-        const playerIds = Object.keys(currentSession.players);
-        const initialGameState = game.getDefaultGameState();
-        
-        // For Prisoner's Dilemma, initialize player data with scores of 0
-        if (game.id === 'prisoners-dilemma') {
-          const playerData: Record<string, any> = {};
-          
-          playerIds.forEach(playerId => {
-            playerData[playerId] = {
-              totalScore: 0,
-              ready: false
-            };
-          });
-          
-          initialGameState.playerData = playerData;
-          initialGameState.status = 'in_progress';
-          initialGameState.round = 1;
-        }
-        
-        // Update session status to playing and set initial game state
-        await update(ref(database, `sessions/${currentSession.id}`), {
-          status: 'playing',
-          'gameData.gameState': initialGameState
-        });
-      } else {
+      if (!currentSession.gameData || !currentSession.gameData.gameId) {
         throw new Error('Game data is missing');
       }
+      
+      if (!isValidPlayerCount(currentSession.gameData.gameId, currentPlayerCount)) {
+        throw new Error(`This game requires between ${getGameById(currentSession.gameData.gameId)?.minPlayers} and ${getGameById(currentSession.gameData.gameId)?.maxPlayers} players`);
+      }
+      
+      // Get the game and initialize game state
+      const game = getGameById(currentSession.gameData.gameId);
+      if (!game) {
+        throw new Error('Game not found in registry');
+      }
+      
+      // Initialize playerData with all current players
+      const playerIds = Object.keys(currentSession.players);
+      const initialGameState = game.getDefaultGameState();
+      
+      // For Prisoner's Dilemma, initialize player data with scores of 0
+      if (game.id === 'prisoners-dilemma') {
+        const playerData: Record<string, any> = {};
+        
+        playerIds.forEach(playerId => {
+          playerData[playerId] = {
+            totalScore: 0,
+            ready: false
+          };
+        });
+        
+        initialGameState.playerData = playerData;
+        initialGameState.status = 'in_progress';
+        initialGameState.round = 1;
+        
+        // Ensure history is initialized as an array
+        if (!Array.isArray(initialGameState.history)) {
+          initialGameState.history = [];
+        }
+      }
+      
+      // Update session status to playing and set initial game state
+      await update(ref(database, `sessions/${currentSession.id}`), {
+        status: 'playing',
+        gameData: {
+          ...currentSession.gameData,
+          gameState: initialGameState
+        }
+      });
     } catch (error: any) {
       console.error('Error starting game:', error);
       setError(error.message);
@@ -376,12 +386,71 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     if (!user || !currentSession) return;
     
     try {
+      // Remove undefined values from the newGameState to prevent Firebase errors
+      const cleanGameState = JSON.parse(JSON.stringify(newGameState));
+      
       // Update the game state in the database
       await update(ref(database, `sessions/${currentSession.id}/gameData`), {
-        gameState: newGameState
+        gameState: cleanGameState
       });
+      
+      // Check if the game is completed and update session status
+      if (newGameState.status === 'completed') {
+        await update(ref(database, `sessions/${currentSession.id}`), {
+          status: 'finished'
+        });
+      }
     } catch (error: any) {
       console.error('Error updating game state:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Finish a game
+  const finishGame = async (): Promise<void> => {
+    if (!user || !currentSession) return;
+    
+    try {
+      // Update session status to finished
+      await update(ref(database, `sessions/${currentSession.id}`), {
+        status: 'finished'
+      });
+      
+      // Don't clear current session - allow it to be visible on the dashboard
+    } catch (error: any) {
+      console.error('Error finishing game:', error);
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Reset a game
+  const resetGame = async (): Promise<void> => {
+    if (!user || !currentSession) return;
+    
+    try {
+      // Verify user is the host
+      const isHost = currentSession.players[user.uid]?.isHost;
+      if (!isHost) {
+        throw new Error('Only the host can reset the game');
+      }
+      
+      // Update session status to waiting
+      await update(ref(database, `sessions/${currentSession.id}`), {
+        status: 'waiting'
+      });
+      
+      // Reset game state to default
+      const game = getGameById(currentSession.gameData?.gameId || '');
+      if (game) {
+        const defaultGameState = game.getDefaultGameState();
+        await update(ref(database, `sessions/${currentSession.id}/gameData`), {
+          gameState: defaultGameState
+        });
+      }
+    } catch (error: any) {
+      console.error('Error resetting game:', error);
       setError(error.message);
       throw error;
     }
@@ -398,6 +467,8 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     updateSession,
     deleteSession,
     updateGameState,
+    finishGame,
+    resetGame,
     loading,
     error
   };

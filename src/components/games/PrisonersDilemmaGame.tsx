@@ -3,16 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, Player } from '@/context/SessionContext';
 import { PrisonersDilemmaState, Decision, SCORING } from '@/games/prisonersDilemma';
+import { useRouter } from 'next/navigation';
 
 interface PrisonersDilemmaGameProps {
   onGameUpdate?: (gameState: PrisonersDilemmaState) => void;
 }
 
 const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdate }) => {
-  const { currentSession, currentUser, updateGameState } = useSession();
+  const { currentSession, currentUser, updateGameState, finishGame } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
+  const router = useRouter();
   
   // Make sure we have the required session data
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
@@ -59,7 +61,11 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       };
       
       // Create updated player data
-      const updatedPlayerData = {
+      const updatedPlayerData: Record<string, {
+        totalScore: number;
+        currentDecision?: Decision;
+        ready: boolean;
+      }> = {
         ...gameState.playerData,
         [currentPlayerId]: {
           ...currentPlayerData,
@@ -76,7 +82,11 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       
       // Check if all players have made decisions
       const allPlayersReady = Object.keys(currentSession.players).every(
-        playerId => updatedPlayerData[playerId]?.ready
+        playerId => {
+          // Add safety check to make sure the player exists in updatedPlayerData
+          const playerData = updatedPlayerData[playerId as string];
+          return playerData && 'ready' in playerData ? playerData.ready : false;
+        }
       );
       
       // If all players have made decisions, evaluate the round
@@ -111,22 +121,28 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
     let score1 = 0;
     let score2 = 0;
     
-    if (decision1 === 'cooperate' && decision2 === 'cooperate') {
-      // Both cooperate
-      score1 = SCORING.BOTH_COOPERATE;
-      score2 = SCORING.BOTH_COOPERATE;
-    } else if (decision1 === 'defect' && decision2 === 'defect') {
-      // Both defect
-      score1 = SCORING.BOTH_DEFECT;
-      score2 = SCORING.BOTH_DEFECT;
-    } else if (decision1 === 'cooperate' && decision2 === 'defect') {
-      // Player 1 cooperates, Player 2 defects
-      score1 = SCORING.COOPERATE_WHEN_OTHER_DEFECTS;
-      score2 = SCORING.DEFECT_WHEN_OTHER_COOPERATES;
-    } else if (decision1 === 'defect' && decision2 === 'cooperate') {
-      // Player 1 defects, Player 2 cooperates
-      score1 = SCORING.DEFECT_WHEN_OTHER_COOPERATES;
-      score2 = SCORING.COOPERATE_WHEN_OTHER_DEFECTS;
+    // Add safety check to make sure decisions are defined
+    if (decision1 && decision2) {
+      if (decision1 === 'cooperate' && decision2 === 'cooperate') {
+        // Both cooperate
+        score1 = SCORING.BOTH_COOPERATE;
+        score2 = SCORING.BOTH_COOPERATE;
+      } else if (decision1 === 'defect' && decision2 === 'defect') {
+        // Both defect
+        score1 = SCORING.BOTH_DEFECT;
+        score2 = SCORING.BOTH_DEFECT;
+      } else if (decision1 === 'cooperate' && decision2 === 'defect') {
+        // Player 1 cooperates, Player 2 defects
+        score1 = SCORING.COOPERATE_WHEN_OTHER_DEFECTS;
+        score2 = SCORING.DEFECT_WHEN_OTHER_COOPERATES;
+      } else if (decision1 === 'defect' && decision2 === 'cooperate') {
+        // Player 1 defects, Player 2 cooperates
+        score1 = SCORING.DEFECT_WHEN_OTHER_COOPERATES;
+        score2 = SCORING.COOPERATE_WHEN_OTHER_DEFECTS;
+      }
+    } else {
+      console.error('Cannot evaluate round: one or both players have not made a decision');
+      return; // Cannot proceed without decisions
     }
     
     // Update scores and history
@@ -135,7 +151,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       decisions: {
         [player1]: decision1,
         [player2]: decision2
-      },
+      } as Record<string, Decision>, // Add type assertion to fix TypeScript error
       scores: {
         [player1]: score1,
         [player2]: score2
@@ -146,12 +162,12 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
     const updatedPlayerData = {
       [player1]: {
         totalScore: currentState.playerData[player1].totalScore + score1,
-        currentDecision: undefined,
+        currentDecision: null,
         ready: false
       },
       [player2]: {
         totalScore: currentState.playerData[player2].totalScore + score2,
-        currentDecision: undefined,
+        currentDecision: null,
         ready: false
       }
     };
@@ -163,7 +179,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       round: isLastRound ? currentState.round : currentState.round + 1,
       status: isLastRound ? 'completed' : 'in_progress',
       playerData: updatedPlayerData,
-      history: [...currentState.history, roundResult]
+      history: Array.isArray(currentState.history) ? [...currentState.history, roundResult] : [roundResult]
     };
     
     // Update the game state
@@ -183,6 +199,19 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
   
   const opponent = getOpponent();
   
+  // Function to handle exiting the game
+  const handleExitGame = async () => {
+    setLoading(true);
+    try {
+      await finishGame();
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Failed to exit game');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <div className="flex flex-col h-full">
       {error && (
@@ -190,6 +219,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
           {error}
         </div>
       )}
+      
       
       {/* Game Status */}
       <div className="mb-6 text-center">
@@ -254,7 +284,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       )}
       
       {/* Game Results */}
-      {gameState.history && gameState.history.length > 0 && (
+      {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
           <h3 className="font-semibold text-lg mb-3">Game History</h3>
           
@@ -316,6 +346,38 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
               )}
             </table>
           </div>
+          
+          {/* Add Game Over summary with larger display of total points */}
+          {isGameOver && (
+            <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
+              <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+              <div className="flex justify-center items-center gap-8">
+                <div className="flex flex-col items-center">
+                  <p className="text-lg font-medium">Your Score</p>
+                  <p className="text-4xl font-bold mt-2">
+                    {currentPlayerId && gameState.playerData && 
+                     gameState.playerData[currentPlayerId]?.totalScore}
+                  </p>
+                </div>
+                <div className="text-2xl font-bold">vs</div>
+                <div className="flex flex-col items-center">
+                  <p className="text-lg font-medium">{opponent?.displayName || 'Opponent'}'s Score</p>
+                  <p className="text-4xl font-bold mt-2">
+                    {opponent && opponent.id && gameState.playerData && 
+                     gameState.playerData[opponent.id]?.totalScore}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6">
+                <button
+                  onClick={handleExitGame}
+                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

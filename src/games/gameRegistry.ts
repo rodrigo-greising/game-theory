@@ -1,9 +1,13 @@
 import { Game, GameOption, GameRegistry } from '@/types/games';
 import PrisonersDilemma from './prisonersDilemma';
+import StagHunt from './stagHunt';
+import Chicken from './chicken';
 
 // Registry of all available games (follows Open/Closed principle)
 const games: GameRegistry = {
   [PrisonersDilemma.id]: PrisonersDilemma,
+  [StagHunt.id]: StagHunt,
+  [Chicken.id]: Chicken,
   // Additional games will be added here in the future
 };
 

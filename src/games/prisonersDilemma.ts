@@ -16,7 +16,7 @@ export type Decision = 'cooperate' | 'defect';
 
 export interface PrisonerPlayerData {
   totalScore: number;
-  currentDecision?: Decision;
+  currentDecision?: Decision | null;
   ready: boolean;
 }
 
@@ -54,7 +54,7 @@ const PrisonersDilemma: Game = {
   getDefaultGameState: (): PrisonersDilemmaState => {
     return {
       round: 0,
-      maxRounds: 10,
+      maxRounds: 5,
       status: 'setup',
       playerData: {},
       history: []

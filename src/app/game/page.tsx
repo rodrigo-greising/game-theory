@@ -6,15 +6,28 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Link from 'next/link';
 import PrisonersDilemmaGame from '@/components/games/PrisonersDilemmaGame';
+import StagHuntGame from '@/components/games/StagHuntGame';
+import ChickenGame from '@/components/games/ChickenGame';
 import GameInfo from '@/components/games/GameInfo';
 
 export default function GamePage() {
-  const { currentSession, loading } = useSession();
+  const { currentSession, loading, finishGame } = useSession();
   const router = useRouter();
   
-  // Redirect to dashboard if not in a session or if session is not in 'playing' status
+  // Function to handle returning to dashboard
+  const handleReturnToDashboard = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await finishGame();
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error finishing game:', error);
+    }
+  };
+  
+  // Redirect to dashboard if not in a session or if session is neither 'playing' nor 'finished'
   useEffect(() => {
-    if (!loading && (!currentSession || currentSession.status !== 'playing')) {
+    if (!loading && (!currentSession || (currentSession.status !== 'playing' && currentSession.status !== 'finished'))) {
       router.push('/dashboard');
     }
   }, [currentSession, loading, router]);
@@ -27,12 +40,14 @@ export default function GamePage() {
     );
   }
   
-  if (!currentSession || currentSession.status !== 'playing') {
+  if (!currentSession || (currentSession.status !== 'playing' && currentSession.status !== 'finished')) {
     return null; // Will be redirected by the useEffect above
   }
   
   const players = Object.values(currentSession.players || {});
   const gameId = currentSession?.gameData?.gameId || '';
+  
+  
   
   // Add safety check to ensure players are properly loaded
   if (!players || players.length < 2) {
@@ -59,6 +74,14 @@ export default function GamePage() {
       return <PrisonersDilemmaGame />;
     }
     
+    if (gameId === 'stag-hunt') {
+      return <StagHuntGame />;
+    }
+    
+    if (gameId === 'chicken') {
+      return <ChickenGame />;
+    }
+    
     // Fallback for unrecognized games
     return (
       <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
@@ -75,19 +98,24 @@ export default function GamePage() {
         <div className="max-w-4xl mx-auto">
           <header className="mb-8 flex items-center justify-between">
             <h1 className="text-3xl font-bold">Game: {currentSession.name}</h1>
-            <Link 
-              href="/dashboard"
+            <a 
+              href="#"
+              onClick={handleReturnToDashboard}
               className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm"
             >
               Back to Dashboard
-            </Link>
+            </a>
           </header>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                 <h2 className="text-xl font-semibold mb-4">Game Board</h2>
-                {renderGameComponent()}
+                {gameId === 'stag-hunt' ? (
+                  <StagHuntGame />
+                ) : gameId === 'chicken' ? (
+                  <ChickenGame />
+                ) : renderGameComponent()}
               </div>
             </div>
             

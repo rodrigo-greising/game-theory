@@ -83,6 +83,15 @@ const GameInfo: React.FC<GameInfoProps> = ({ session }) => {
           </p>
         </div>
       )}
+      
+      {game.id === 'stag-hunt' && (
+        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900 dark:bg-opacity-20 border border-green-200 dark:border-green-700 rounded-md">
+          <h4 className="font-medium mb-2 text-green-700 dark:text-green-200">Stag Hunt</h4>
+          <p className="text-sm text-green-600 dark:text-green-300">
+            The Stag Hunt illustrates the tension between social cooperation and individual safety. It demonstrates how mutual trust can lead to optimal outcomes, but fear of betrayal might lead to safer, less rewarding choices.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

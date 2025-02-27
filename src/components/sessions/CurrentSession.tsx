@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import GameInfo from '@/components/games/GameInfo';
 
 const CurrentSession: React.FC = () => {
-  const { currentSession, leaveSession, startGame, loading } = useSession();
+  const { currentSession, leaveSession, startGame, resetGame, loading } = useSession();
   const { user } = useAuth();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -34,6 +34,14 @@ const CurrentSession: React.FC = () => {
     navigator.clipboard.writeText(url)
       .then(() => setCopied(true))
       .catch(err => console.error('Failed to copy: ', err));
+  };
+  
+  const handleResetGame = async () => {
+    try {
+      await resetGame();
+    } catch (error) {
+      console.error('Error resetting game:', error);
+    }
   };
   
   if (loading) {
@@ -76,6 +84,15 @@ const CurrentSession: React.FC = () => {
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      {currentSession.status === 'finished' && (
+        <div className="p-4 bg-purple-100 dark:bg-purple-900 text-center border-b border-purple-200 dark:border-purple-700">
+          <p className="text-purple-800 dark:text-purple-200">
+            {isHost 
+              ? "This game has ended. You can reset the game to play again with the same players."
+              : "This game has ended. Waiting for the host to reset the game or start a new one."}
+          </p>
+        </div>
+      )}
       <div className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">
@@ -83,6 +100,11 @@ const CurrentSession: React.FC = () => {
             {currentSession.status === 'playing' && (
               <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                 In Progress
+              </span>
+            )}
+            {currentSession.status === 'finished' && (
+              <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
+                Completed
               </span>
             )}
           </h3>
@@ -96,6 +118,15 @@ const CurrentSession: React.FC = () => {
                 title={players.length < 2 ? "Need at least 2 players to start" : "Start the game"}
               >
                 Start Game
+              </button>
+            )}
+            
+            {isHost && currentSession.status === 'finished' && (
+              <button
+                onClick={handleResetGame}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md"
+              >
+                Reset Game
               </button>
             )}
             
@@ -161,6 +192,34 @@ const CurrentSession: React.FC = () => {
                 Select a Game
               </button>
             </div>
+          )}
+        </div>
+      )}
+      
+      {currentSession.status === 'finished' && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 text-center">
+          {isHost ? (
+            <>
+              <button 
+                onClick={handleResetGame} 
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium mr-4"
+              >
+                Reset Game
+              </button>
+              <button 
+                onClick={handleLeaveSession} 
+                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium"
+              >
+                Leave Session
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={handleLeaveSession} 
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium"
+            >
+              Leave Session
+            </button>
           )}
         </div>
       )}
