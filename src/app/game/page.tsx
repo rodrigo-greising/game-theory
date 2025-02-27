@@ -8,6 +8,7 @@ import Link from 'next/link';
 import PrisonersDilemmaGame from '@/components/games/PrisonersDilemmaGame';
 import StagHuntGame from '@/components/games/StagHuntGame';
 import ChickenGame from '@/components/games/ChickenGame';
+import EventCoordinationGame from '@/components/games/EventCoordinationGame';
 import GameInfo from '@/components/games/GameInfo';
 import TournamentLeaderboard from '@/components/games/TournamentLeaderboard';
 
@@ -107,6 +108,10 @@ export default function GamePage() {
     
     if (gameId === 'chicken') {
       return <ChickenGame />;
+    }
+    
+    if (gameId === 'battle-of-the-sexes') {
+      return <EventCoordinationGame />;
     }
     
     // Fallback for unrecognized games
