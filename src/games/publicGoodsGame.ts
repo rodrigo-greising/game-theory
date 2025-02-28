@@ -26,27 +26,40 @@ export interface PublicGoodsPlayerData {
 // Implementation of the Public Goods Game
 const PublicGoodsGame: Game = {
   id: 'public-goods-game',
-  name: 'Public Goods Game',
-  description: 'A game where players decide how much to contribute to a public pool, which is then multiplied and redistributed equally among all players.',
+  name: 'Juego de Bienes Públicos',
+  description: 'Un juego donde los jugadores deciden cuánto contribuir a un fondo común, que luego se multiplica y redistribuye equitativamente entre todos los jugadores.',
   minPlayers: 3,
   maxPlayers: 10, // Can be played with various numbers of players
   rules: `
-    In the Public Goods Game, each player starts with an initial endowment of 20 points in each round.
+    En el Juego de Bienes Públicos, cada jugador comienza con una dotación inicial de 20 puntos en cada ronda.
     
-    Players simultaneously decide how much of their endowment to contribute to a public pool (from 0 to 20 points).
-    They keep any amount they don't contribute.
+    Los jugadores deciden simultáneamente cuánto de su dotación contribuir a un fondo común (de 0 a 20 puntos).
+    Conservan cualquier cantidad que no contribuyan.
     
-    The total amount in the public pool is multiplied by 2 and then divided equally among all players, regardless of their individual contributions.
+    La cantidad total en el fondo común se multiplica por 2 y luego se divide equitativamente entre todos los jugadores, independientemente de sus contribuciones individuales.
     
-    For example, with 4 players:
-    - If all contribute 20 points, the public pool will be 80 points.
-    - After multiplying by 2, there are 160 points to divide.
-    - Each player receives 40 points (more than their initial contribution).
-    - If one player contributes 0 while others contribute 20, that player keeps their 20 points plus gets an equal share from the public pool.
+    Por ejemplo, con 4 jugadores:
+    - Si todos contribuyen con 20 puntos, el fondo común será de 80 puntos.
+    - Después de multiplicar por 2, hay 160 puntos para dividir.
+    - Cada jugador recibe 40 puntos (más que su contribución inicial).
+    - Si un jugador contribuye con 0 mientras que otros contribuyen con 20, ese jugador conserva sus 20 puntos más recibe una parte igual del fondo común.
     
-    The game consists of multiple rounds. The player with the highest total score at the end wins.
+    El juego consiste en múltiples rondas. El jugador con la puntuación total más alta al final gana.
     
-    This game explores social dilemmas, cooperation, and free-riding behavior.
+    Este juego explora dilemas sociales, cooperación y comportamiento de aprovechamiento gratuito.
+  `,
+  educationalContent: `
+    <h3>Orígenes e Historia del Juego de Bienes Públicos</h3>
+    
+    <p>El Juego de Bienes Públicos fue desarrollado formalmente por economistas en la década de 1970 como una extensión de los modelos de provisión de bienes públicos en economía. Académicos como John Ledyard, Werner Güth y otros pioneros en economía experimental lo utilizaron para estudiar cómo las personas toman decisiones sobre contribuciones a bienes colectivos.</p>
+    
+    <p>Este juego modela situaciones reales donde los individuos deben decidir cuánto contribuir a recursos compartidos como parques públicos, investigación científica, infraestructura comunitaria o esfuerzos para mitigar el cambio climático. El desafío fundamental es que, aunque todos se benefician de la cooperación colectiva, cada individuo tiene un incentivo para "aprovecharse gratuitamente" de las contribuciones de los demás.</p>
+    
+    <p>Los experimentos con el Juego de Bienes Públicos han revelado varios patrones interesantes en el comportamiento humano. Típicamente, las personas comienzan contribuyendo cantidades significativas (aproximadamente el 40-60% de su dotación), pero las contribuciones tienden a disminuir con el tiempo a medida que algunos jugadores adoptan estrategias de aprovechamiento gratuito.</p>
+    
+    <p>Investigaciones posteriores han explorado modificaciones que pueden fomentar la cooperación, como la comunicación entre jugadores, la posibilidad de castigar a los no contribuyentes, la formación de reputación, y los efectos de diferentes marcos culturales e institucionales.</p>
+    
+    <p>El Juego de Bienes Públicos ha proporcionado información crucial para el diseño de políticas en áreas como impuestos, gestión de recursos comunes, financiamiento de infraestructura pública y cooperación internacional en problemas globales como el cambio climático y la salud pública.</p>
   `,
   validatePlayerCount: (playerCount: number): boolean => {
     // Public Goods Game needs at least 3 players to be interesting

@@ -21,26 +21,26 @@ const TournamentLeaderboard: React.FC<TournamentLeaderboardProps> = ({ className
   
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 ${className || ''}`}>
-      <h3 className="text-xl font-bold mb-4 text-center">Tournament Leaderboard</h3>
+      <h3 className="text-xl font-bold mb-4 text-center">Clasificación del Torneo</h3>
       
       {sortedResults.length === 0 ? (
-        <p className="text-center text-gray-500">No results yet</p>
+        <p className="text-center text-gray-500">Aún no hay resultados</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase">
               <tr>
-                <th className="px-4 py-2 text-left">Rank</th>
-                <th className="px-4 py-2 text-left">Player</th>
-                <th className="px-4 py-2 text-right">Score</th>
-                <th className="px-4 py-2 text-right">Matches</th>
-                <th className="px-4 py-2 text-right">Win/Loss/Draw</th>
-                <th className="px-4 py-2 text-center">Cooperation %</th>
+                <th className="px-4 py-2 text-left">Posición</th>
+                <th className="px-4 py-2 text-left">Jugador</th>
+                <th className="px-4 py-2 text-right">Puntuación</th>
+                <th className="px-4 py-2 text-right">Partidas</th>
+                <th className="px-4 py-2 text-right">Victorias/Derrotas/Empates</th>
+                <th className="px-4 py-2 text-center">% Cooperación</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {sortedResults.map((result, index) => {
-                const playerName = currentSession.players[result.playerId]?.displayName || 'Unknown';
+                const playerName = currentSession.players[result.playerId]?.displayName || 'Desconocido';
                 const totalDecisions = result.cooperateCount + result.defectCount;
                 const cooperationPercentage = totalDecisions === 0 
                   ? 0 
@@ -90,10 +90,10 @@ const TournamentLeaderboard: React.FC<TournamentLeaderboardProps> = ({ className
       )}
       
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <h4 className="font-semibold mb-2">Game Theory Insights</h4>
+        <h4 className="font-semibold mb-2">Perspectivas de Teoría de Juegos</h4>
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          This leaderboard shows how different players perform in competitive scenarios. 
-          Observe how cooperation rates correlate with overall success.
+          Esta clasificación muestra cómo diferentes jugadores se desempeñan en escenarios competitivos. 
+          Observa cómo las tasas de cooperación se correlacionan con el éxito general.
         </p>
       </div>
     </div>

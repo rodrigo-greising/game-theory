@@ -9,6 +9,7 @@ export interface Game {
   minPlayers: number;
   maxPlayers: number;
   rules: string;
+  educationalContent?: string; // Information about the game's origins and educational value
   validatePlayerCount: (playerCount: number) => boolean;
   getDefaultGameState: () => any;
   initializeGame?: (gameState: any, playerIds: string[]) => any; // Optional method to initialize game with players

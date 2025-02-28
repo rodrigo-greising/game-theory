@@ -32,27 +32,40 @@ export const SCORING = {
 // Implementation of the Rock-Paper-Scissors Game
 const RockPaperScissors: Game = {
   id: 'rock-paper-scissors',
-  name: 'Rock-Paper-Scissors',
-  description: 'A classic zero-sum game where each choice beats one option and loses to another, illustrating cyclic dominance.',
+  name: 'Piedra, Papel o Tijera',
+  description: 'Un juego clásico de suma cero donde cada elección vence a una opción y pierde ante otra, ilustrando la dominancia cíclica.',
   minPlayers: 2,
   maxPlayers: 2, // Classic version is for exactly 2 players
   rules: `
-    In Rock-Paper-Scissors, you and your opponent simultaneously choose Rock, Paper, or Scissors.
+    En Piedra, Papel o Tijera, tú y tu oponente eligen simultáneamente Piedra, Papel o Tijera.
     
-    The rules are:
-    - Rock beats Scissors
-    - Scissors beats Paper
-    - Paper beats Rock
-    - If both players choose the same option, it's a draw
+    Las reglas son:
+    - Piedra vence a Tijera
+    - Tijera vence a Papel
+    - Papel vence a Piedra
+    - Si ambos jugadores eligen la misma opción, es un empate
     
-    The scoring is:
-    - Win: +1 point
-    - Lose: -1 point
-    - Draw: 0 points
+    La puntuación es:
+    - Victoria: +1 punto
+    - Derrota: -1 punto
+    - Empate: 0 puntos
     
-    The game consists of multiple rounds. The player with the highest total score at the end wins.
+    El juego consiste en múltiples rondas. El jugador con la puntuación total más alta al final gana.
     
-    This game illustrates mixed-strategy equilibria, unpredictability, and cyclic dominance.
+    Este juego ilustra los equilibrios de estrategia mixta, la imprevisibilidad y la dominancia cíclica.
+  `,
+  educationalContent: `
+    <h3>Orígenes e Historia de Piedra, Papel o Tijera</h3>
+    
+    <p>Piedra, Papel o Tijera es uno de los juegos más antiguos y universales que se conocen. Sus orígenes se remontan a la China antigua, alrededor del siglo III a.C., durante la dinastía Han. Inicialmente era conocido como "shoushiling" y evolucionó a través de los siglos, extendiéndose por Asia y llegando a Europa en el siglo XVIII.</p>
+    
+    <p>En Japón se popularizó como "jan-ken" durante el período Edo (1603-1867), y desde allí se extendió al resto del mundo. Cada cultura ha adaptado ligeramente el juego, pero las reglas básicas de dominancia cíclica han permanecido notablemente consistentes a lo largo del tiempo y las fronteras culturales.</p>
+    
+    <p>Desde el punto de vista de la teoría de juegos, Piedra, Papel o Tijera es un ejemplo perfecto de un juego de suma cero con equilibrio de estrategia mixta. En un juego óptimo, cada jugador debe elegir cada opción con una probabilidad de 1/3 para maximizar sus resultados esperados, lo que hace que las decisiones sean impredecibles para el oponente.</p>
+    
+    <p>Este juego aparentemente simple ha sido objeto de estudio matemático serio y se ha utilizado para ilustrar conceptos como equilibrio de Nash, estrategias mixtas y la importancia de la aleatoriedad en la toma de decisiones estratégicas. Incluso se han celebrado torneos mundiales de Piedra, Papel o Tijera con estrategias complejas basadas en psicología y patrones de comportamiento.</p>
+    
+    <p>Más allá de ser un pasatiempo, Piedra, Papel o Tijera ha sido utilizado como método de toma de decisiones, herramienta educativa para enseñar probabilidad y teoría de juegos, e incluso como modelo para estudiar sistemas dinámicos en biología y economía donde existen relaciones de dominancia cíclica similares.</p>
   `,
   validatePlayerCount: (playerCount: number): boolean => {
     // For Rock-Paper-Scissors, we require exactly 2 players

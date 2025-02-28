@@ -79,8 +79,8 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere al menos 2 jugadores</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
   if (!gameState.playerData) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Initializing game data...</p>
+        <p className="text-yellow-500">Inicializando datos del juego...</p>
         <div className="mt-4 flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -415,15 +415,15 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : hasClaimed 
-              ? "Waiting for other players..." 
-              : "Make your claim"}
+              ? "Esperando a otros jugadores..." 
+              : "Haz tu reclamación"}
         </p>
       </div>
       
@@ -431,11 +431,11 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
       {isInProgress && !isGameOver && (
         <div className="flex flex-col items-center mb-8">
           <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-            <h4 className="font-bold text-lg mb-4 text-center">Your Claim</h4>
+            <h4 className="font-bold text-lg mb-4 text-center">Tu Reclamación</h4>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center">
-              Choose a value between {gameState.minClaim} and {gameState.maxClaim}.
-              Remember, if your claim is the lowest, you'll get a bonus of {gameState.bonus} points.
-              But if your claim is higher than the lowest, you'll incur a penalty of {gameState.bonus} points.
+              Elige un valor entre {gameState.minClaim} y {gameState.maxClaim}.
+              Recuerda, si tu reclamación es la más baja, obtendrás una bonificación de {gameState.bonus} puntos.
+              Pero si tu reclamación es más alta que la más baja, tendrás una penalización de {gameState.bonus} puntos.
             </p>
             
             <div className="mb-6">
@@ -466,19 +466,19 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
                   : 'bg-blue-500 hover:bg-blue-600'
                 }`}
             >
-              {loading ? 'Submitting...' : hasClaimed ? 'Claim Submitted' : 'Submit Claim'}
+              {loading ? 'Enviando...' : hasClaimed ? 'Reclamación Enviada' : 'Enviar Reclamación'}
             </button>
           </div>
           
           {hasClaimed && gameState.playerData && currentPlayerId && gameState.playerData[currentPlayerId] && (
             <div className="mt-6 text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p>You've claimed <strong>{gameState.playerData[currentPlayerId]?.currentClaim}</strong></p>
+              <p>Has reclamado <strong>{gameState.playerData[currentPlayerId]?.currentClaim}</strong></p>
               <p className="text-sm text-gray-500 mt-1">
-                Waiting for {Object.values(currentSession.players || {}).filter(p => 
+                Esperando a que {Object.values(currentSession.players || {}).filter(p => 
                   p.id !== currentPlayerId && 
                   (!gameState.playerData[p.id] || 
                    !gameState.playerData[p.id].ready)
-                ).map(p => p.displayName).join(', ')} to make claims...
+                ).map(p => p.displayName).join(', ')} hagan sus reclamaciones...
               </p>
             </div>
           )}
@@ -488,21 +488,21 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
       {/* Game Results */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-right">Your Claim</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-right">Tu Reclamación</th>
                   {players.map(player => 
                     player.id !== currentPlayerId && (
-                      <th key={player.id} className="py-2 text-right">{player.displayName}'s Claim</th>
+                      <th key={player.id} className="py-2 text-right">Reclamación de {player.displayName}</th>
                     )
                   )}
-                  <th className="py-2 text-right">Lowest Claim</th>
-                  <th className="py-2 text-right">Your Points</th>
+                  <th className="py-2 text-right">Reclamación Más Baja</th>
+                  <th className="py-2 text-right">Tus Puntos</th>
                 </tr>
               </thead>
               <tbody>
@@ -541,7 +541,7 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
               {isGameOver && gameState.playerData && (
                 <tfoot>
                   <tr className="font-bold">
-                    <td colSpan={3 + otherPlayers.length} className="py-2 text-right">Final Score:</td>
+                    <td colSpan={3 + otherPlayers.length} className="py-2 text-right">Puntuación Final:</td>
                     <td className="py-2 text-right">
                       {currentPlayerId && gameState.playerData[currentPlayerId]?.totalScore}
                     </td>
@@ -554,9 +554,9 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
           {/* Add Game Over summary with larger display of total points */}
           {isGameOver && (
             <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-              <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+              <h2 className="text-2xl font-bold mb-4">¡Juego Completado!</h2>
               <div className="flex flex-col justify-center items-center gap-4">
-                <h3 className="text-xl font-semibold">Final Scores</h3>
+                <h3 className="text-xl font-semibold">Puntuaciones Finales</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mt-4">
                   {players.map(player => {
                     const isCurrentPlayer = player.id === currentPlayerId;
@@ -571,7 +571,7 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
                                    ${isCurrentPlayer ? 'border-2 border-blue-500' : ''}`}
                       >
                         <div className="font-medium text-lg">
-                          {isCurrentPlayer ? 'You' : player.displayName}
+                          {isCurrentPlayer ? 'Tú' : player.displayName}
                           {isWinner && <span className="ml-2">🏆</span>}
                         </div>
                         <div className="text-3xl font-bold mt-2">{playerScore}</div>
@@ -585,7 +585,7 @@ const TravelersDilemmaGame: React.FC<TravelersDilemmaGameProps> = ({ onGameUpdat
                   onClick={handleExitGame}
                   className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
                 >
-                  Return to Dashboard
+                  Volver al Panel
                 </button>
               </div>
             </div>

@@ -314,6 +314,16 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
     }
   };
   
+  // Add safety check for players
+  if (!players || players.length < 2) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere 2 jugadores</p>
+      </div>
+    );
+  }
+  
   // Render functions
   const renderDictatorInterface = () => {
     const maxAmount = gameState.totalAmount;
@@ -324,17 +334,17 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
     
     return (
       <div className="flex flex-col items-center mt-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h3 className="text-xl font-semibold mb-4">You are the Dictator</h3>
+        <h3 className="text-xl font-semibold mb-4">Eres el Dictador</h3>
         <p className="mb-4 text-center">
-          Decide how to split {gameState.totalAmount} points between yourself and the other player. 
-          The recipient must accept your decision.
+          Decide cómo dividir {gameState.totalAmount} puntos entre tú y el otro jugador. 
+          El receptor debe aceptar tu decisión.
         </p>
         
         {!hasDecided ? (
           <>
             <div className="w-full max-w-md mb-4">
               <label className="block text-sm font-medium mb-2">
-                Amount to give to recipient: {allocationAmount} points
+                Cantidad para dar al receptor: {allocationAmount} puntos
               </label>
               <input
                 type="range"
@@ -352,11 +362,11 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
             </div>
             <div className="flex justify-between w-full max-w-md mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded">
               <div className="text-center">
-                <p className="text-sm text-gray-500">You will keep</p>
+                <p className="text-sm text-gray-500">Tú conservarás</p>
                 <p className="text-2xl font-bold">{maxAmount - allocationAmount}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-500">Recipient will get</p>
+                <p className="text-sm text-gray-500">El receptor obtendrá</p>
                 <p className="text-2xl font-bold">{allocationAmount}</p>
               </div>
             </div>
@@ -365,13 +375,13 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
               disabled={loading}
               className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Submitting...' : 'Confirm Allocation'}
+              {loading ? 'Enviando...' : 'Confirmar Asignación'}
             </button>
           </>
         ) : (
           <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg w-full max-w-md">
-            <p className="mb-2">You have allocated {gameState.playerData && gameState.playerData[currentPlayerId] ? gameState.playerData[currentPlayerId].allocation : 0} points to the recipient.</p>
-            <p className="text-sm text-gray-500">Waiting for the next round...</p>
+            <p className="mb-2">Has asignado {gameState.playerData && gameState.playerData[currentPlayerId] ? gameState.playerData[currentPlayerId].allocation : 0} puntos al receptor.</p>
+            <p className="text-sm text-gray-500">Esperando a la siguiente ronda...</p>
           </div>
         )}
       </div>
@@ -385,7 +395,7 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
     ) : undefined;
     const dictatorName = dictatorId && currentSession.players[dictatorId] 
       ? currentSession.players[dictatorId].displayName 
-      : 'The Dictator';
+      : 'El Dictador';
     
     // Find the most recent allocation in history that affects this recipient
     const latestRound = gameState.history && gameState.history.length > 0 
@@ -396,17 +406,17 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
     
     return (
       <div className="flex flex-col items-center mt-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <h3 className="text-xl font-semibold mb-4">You are the Recipient</h3>
+        <h3 className="text-xl font-semibold mb-4">Eres el Receptor</h3>
         
         {allocation ? (
           <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg w-full max-w-md">
-            <p className="mb-2">{dictatorName} has allocated {allocation.recipientAmount} points to you.</p>
-            <p className="mb-4">You must accept this allocation.</p>
-            <p className="text-sm text-gray-500">Waiting for the next round...</p>
+            <p className="mb-2">{dictatorName} te ha asignado {allocation.recipientAmount} puntos.</p>
+            <p className="mb-4">Debes aceptar esta asignación.</p>
+            <p className="text-sm text-gray-500">Esperando a la siguiente ronda...</p>
           </div>
         ) : (
           <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg w-full max-w-md">
-            <p className="mb-2">Waiting for {dictatorName} to make an allocation...</p>
+            <p className="mb-2">Esperando a que {dictatorName} haga una asignación...</p>
             <div className="mt-4 animate-pulse flex space-x-4 justify-center">
               <div className="rounded-full bg-gray-200 dark:bg-gray-600 h-3 w-3"></div>
               <div className="rounded-full bg-gray-200 dark:bg-gray-600 h-3 w-3"></div>
@@ -426,17 +436,17 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
 
     return (
       <div className="mt-8">
-        <h3 className="font-semibold text-lg mb-3">Game History</h3>
+        <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
         
         <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="py-2 text-left">Round</th>
-                <th className="py-2 text-left">Dictator</th>
-                <th className="py-2 text-left">Allocation</th>
-                <th className="py-2 text-right">Dictator Points</th>
-                <th className="py-2 text-right">Recipient Points</th>
+                <th className="py-2 text-left">Ronda</th>
+                <th className="py-2 text-left">Dictador</th>
+                <th className="py-2 text-left">Asignación</th>
+                <th className="py-2 text-right">Puntos del Dictador</th>
+                <th className="py-2 text-right">Puntos del Receptor</th>
               </tr>
             </thead>
             <tbody>
@@ -453,15 +463,15 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
                 
                 if (!dictatorId || !recipientId) return null;
                 
-                const dictatorName = currentSession.players[dictatorId]?.displayName || 'Dictator';
-                const recipientName = currentSession.players[recipientId]?.displayName || 'Recipient';
+                const dictatorName = currentSession.players[dictatorId]?.displayName || 'Dictador';
+                const recipientName = currentSession.players[recipientId]?.displayName || 'Receptor';
                 
                 return (
                   <tr key={index} className="border-b border-gray-200 dark:border-gray-700">
                     <td className="py-2">{round.round}</td>
                     <td className="py-2">{dictatorName}</td>
                     <td className="py-2">
-                      {round.allocation.recipientAmount} to recipient
+                      {round.allocation.recipientAmount} al receptor
                     </td>
                     <td className="py-2 text-right">
                       {round.scores[dictatorId]}
@@ -476,7 +486,7 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
             {isGameOver && gameState.playerData && (
               <tfoot>
                 <tr className="font-bold">
-                  <td colSpan={3} className="py-2 text-right">Final Score:</td>
+                  <td colSpan={3} className="py-2 text-right">Puntuación Final:</td>
                   {players.map(player => (
                     <td key={player.id} className="py-2 text-right">
                       {gameState.playerData[player.id]?.totalScore || 0}
@@ -506,7 +516,7 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
     
     return (
       <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-        <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+        <h2 className="text-2xl font-bold mb-4">¡Juego Completado!</h2>
         
         <div className="flex justify-center items-center gap-8 mb-6">
           {playerScores.map((player, index) => (
@@ -525,7 +535,7 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
             onClick={handleExitGame}
             className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
           >
-            Return to Dashboard
+            Volver al Panel
           </button>
         </div>
       </div>
@@ -544,15 +554,15 @@ const DictatorGame: React.FC<DictatorGameProps> = ({ onGameUpdate }) => {
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : currentPlayerRole === 'dictator'
-              ? "You are the Dictator for this round" 
-              : "You are the Recipient for this round"}
+              ? "Eres el Dictador en esta ronda" 
+              : "Eres el Receptor en esta ronda"}
         </p>
       </div>
       

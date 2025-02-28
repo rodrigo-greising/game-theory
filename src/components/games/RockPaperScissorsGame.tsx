@@ -22,7 +22,7 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Game state not available.</p>
+        <p className="text-red-500">Estado del juego no disponible.</p>
       </div>
     );
   }
@@ -44,31 +44,28 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
         setLoading(true);
         try {
           // Initialize player data
-          const initialPlayerData: Record<string, RockPaperScissorsPlayerData> = {};
+          const initialPlayerData: Record<string, any> = {};
           
           // Create player data for each player
           Object.keys(currentSession.players).forEach(playerId => {
             initialPlayerData[playerId] = {
               totalScore: 0,
-              currentMove: "", // Explicitly set to empty string to ensure it's saved in Firebase
+              currentMove: null,
               ready: false
             };
           });
-          
-          console.log("Initializing player data with explicit currentMove:", initialPlayerData);
           
           // Update game state to in_progress
           const updatedGameState: RockPaperScissorsState = {
             ...gameState,
             status: 'in_progress',
             round: 1, // Start at round 1 instead of 0
-            playerData: initialPlayerData,
-            history: []
+            playerData: initialPlayerData
           };
           
           await updateGameState(updatedGameState);
         } catch (err: any) {
-          setError(err.message || 'Failed to start game');
+          setError(err.message || 'Error al iniciar el juego');
         } finally {
           setLoading(false);
         }
@@ -78,36 +75,15 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
     }
   }, [needsInitialization, isHost, loading, gameState, currentSession, updateGameState]);
   
-  // Add effect to initialize move from game state when component mounts
-  useEffect(() => {
-    if (currentPlayerId && 
-        gameState?.playerData && 
-        gameState.playerData[currentPlayerId] && 
-        gameState.playerData[currentPlayerId].currentMove) {
-      const currentMove = gameState.playerData[currentPlayerId].currentMove;
-      console.log(`Initializing move from game state: ${currentMove}`);
-      setMove(currentMove);
-    }
-  }, [gameState?.playerData, currentPlayerId]);
-  
-  // Add an effect to reset the move state when the round changes
-  useEffect(() => {
-    // Reset move at the start of each round
-    if (isInProgress && !isGameOver) {
-      console.log(`Round ${gameState.round} started, resetting move state`);
-      setMove(null);
-    }
-  }, [gameState.round, isInProgress, isGameOver]);
-  
   // If game is loading or needs initialization, show a simple loading UI
   if (loading || needsInitialization) {
     return (
       <div className="flex flex-col items-center text-center p-6">
         <div className="animate-pulse mb-4">
-          <span className="text-5xl">✊ ✋ ✌️</span>
+          <span className="text-5xl">👊 ✌️ ✋</span>
         </div>
-        <h3 className="text-xl font-semibold mb-4">Loading Game...</h3>
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        <h3 className="text-xl font-semibold mb-4">Cargando Juego...</h3>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -116,100 +92,28 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere 2 jugadores</p>
       </div>
     );
   }
   
-  // Improved check to determine if player has moved
-  const checkHasMoved = (): boolean => {
-    // Check local state first (faster response)
-    if (move === 'rock' || move === 'paper' || move === 'scissors') {
-      return true;
-    }
-    
-    // Then check Firebase state
-    if (currentPlayerId && 
-        gameState.playerData && 
-        gameState.playerData[currentPlayerId]) {
-      
-      const firebaseMove = gameState.playerData[currentPlayerId].currentMove;
-      
-      // Check if the move is a valid move (not null, undefined, or empty string)
-      return firebaseMove === 'rock' || firebaseMove === 'paper' || firebaseMove === 'scissors';
-    }
-    
-    return false;
-  };
-
-  // Use the enhanced check
-  const hasMoved = checkHasMoved();
-  
-  // Function to render the emoji for a move
-  const renderMoveEmoji = (playerMove: Move | null | undefined) => {
-    if (playerMove === 'rock') return '✊';
-    if (playerMove === 'paper') return '✋';
-    if (playerMove === 'scissors') return '✌️';
-    return '❓';
+  // Get the opponent of the current player
+  const getOpponent = (): Player | undefined => {
+    if (!currentPlayerId || !players || players.length < 2) return undefined;
+    return players.find(player => player.id !== currentPlayerId);
   };
   
-  // Helper function to get the move display text
-  const getMoveDisplayText = (selectedMove: Move | null | undefined) => {
-    if (selectedMove === 'rock') return '✊ Rock';
-    if (selectedMove === 'paper') return '✋ Paper';
-    if (selectedMove === 'scissors') return '✌️ Scissors';
-    return '❓ Unknown';
-  };
+  const opponent = getOpponent();
   
-  // Function to get the most reliable move value to display
-  const getDisplayMove = (): Move | null => {
-    // Log both states for debugging
-    const localMove = move;
-    const firebaseMove = currentPlayerId && 
-                        gameState.playerData && 
-                        gameState.playerData[currentPlayerId] ? 
-                        gameState.playerData[currentPlayerId].currentMove : null;
-    
-    console.log(`getDisplayMove - Local: ${localMove}, Firebase: ${firebaseMove}`);
-    
-    // First, check if we have a valid local move
-    if (localMove === 'rock' || localMove === 'paper' || localMove === 'scissors') {
-      console.log(`Using local move state: ${localMove}`);
-      return localMove;
-    }
-    
-    // Then check Firebase state
-    if (firebaseMove === 'rock' || firebaseMove === 'paper' || firebaseMove === 'scissors') {
-      console.log(`Using Firebase move state: ${firebaseMove}`);
-      return firebaseMove;
-    }
-    
-    // If firebaseMove is empty string, it means no selection yet
-    if (firebaseMove === "") {
-      console.log("Firebase move is empty string (no selection yet)");
-    }
-    
-    console.log('No valid move found in either local or Firebase state');
-    return null;
-  };
+  // Check if player has already made a move this round
+  const hasMoved = currentPlayerId && gameState.playerData && 
+    gameState.playerData[currentPlayerId] && 
+    gameState.playerData[currentPlayerId]?.currentMove;
   
   // Function to make a move
   const makeMove = async (selectedMove: Move) => {
-    if (!currentPlayerId || !isInProgress) {
-      console.log("Cannot make move: player ID missing or game not in progress");
-      return;
-    }
-    
-    // Check if player has already moved in this round
-    if (hasMoved) {
-      console.log("Player has already moved this round");
-      return;
-    }
-    
-    // Immediately update the local state for UI response
-    setMove(selectedMove);
-    console.log("Setting move:", selectedMove);
+    if (!currentPlayerId || hasMoved || !isInProgress) return;
     
     setLoading(true);
     setError(null);
@@ -221,17 +125,19 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
         ready: false
       };
       
-      // Create updated player data with current move
-      const updatedPlayerData = {
+      // Create updated player data
+      const updatedPlayerData: Record<string, {
+        totalScore: number;
+        currentMove?: Move;
+        ready: boolean;
+      }> = {
         ...gameState.playerData,
         [currentPlayerId]: {
           ...currentPlayerData,
-          currentMove: selectedMove, // Set the move on the player data
+          currentMove: selectedMove,
           ready: true
         }
       };
-      
-      console.log("Player data with move:", updatedPlayerData[currentPlayerId]);
       
       // Update the game state
       const updatedGameState: RockPaperScissorsState = {
@@ -239,15 +145,12 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
         playerData: updatedPlayerData
       };
       
-      // Check if all players have made choices
+      // Check if all players have made moves
       const allPlayersReady = Object.keys(currentSession.players).every(
         playerId => {
-          const playerData = updatedPlayerData[playerId];
-          // Check both ready flag and existence of a valid move
-          return playerData && playerData.ready && 
-                (playerData.currentMove === 'rock' || 
-                 playerData.currentMove === 'paper' || 
-                 playerData.currentMove === 'scissors');
+          // Add safety check to make sure the player exists in updatedPlayerData
+          const playerData = updatedPlayerData[playerId as string];
+          return playerData && 'ready' in playerData ? playerData.ready : false;
         }
       );
       
@@ -257,11 +160,10 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
       } else {
         await updateGameState(updatedGameState);
       }
+      
+      setMove(selectedMove);
     } catch (err: any) {
-      console.error("Error making move:", err);
-      setError(err.message || 'Failed to submit move');
-      // Reset move in case of error
-      setMove(null);
+      setError(err.message || 'Error al realizar el movimiento');
     } finally {
       setLoading(false);
     }
@@ -271,8 +173,8 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
   const evaluateRound = async (currentState: RockPaperScissorsState) => {
     const playerIds = Object.keys(currentSession.players || {});
     if (!playerIds || playerIds.length !== 2) {
-      console.error("Rock-Paper-Scissors requires exactly 2 players");
-      return;
+      console.error("Rock Paper Scissors requires exactly 2 players");
+      return; // RPS requires exactly 2 players
     }
     
     const player1 = playerIds[0];
@@ -280,40 +182,43 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
     const move1 = currentState.playerData[player1].currentMove;
     const move2 = currentState.playerData[player2].currentMove;
     
-    // Calculate results based on moves
-    let result1: Result = 'draw';
-    let result2: Result = 'draw';
-    let score1 = SCORING.DRAW;
-    let score2 = SCORING.DRAW;
+    // Determine the result
+    let result: Result = 'draw';
     
     // Add safety check to make sure moves are defined
     if (move1 && move2) {
       if (move1 === move2) {
         // Draw
-        result1 = 'draw';
-        result2 = 'draw';
-        score1 = SCORING.DRAW;
-        score2 = SCORING.DRAW;
+        result = 'draw';
       } else if (
         (move1 === 'rock' && move2 === 'scissors') ||
         (move1 === 'paper' && move2 === 'rock') ||
         (move1 === 'scissors' && move2 === 'paper')
       ) {
         // Player 1 wins
-        result1 = 'win';
-        result2 = 'lose';
-        score1 = SCORING.WIN;
-        score2 = SCORING.LOSE;
+        result = 'player1';
       } else {
         // Player 2 wins
-        result1 = 'lose';
-        result2 = 'win';
-        score1 = SCORING.LOSE;
-        score2 = SCORING.WIN;
+        result = 'player2';
       }
     } else {
       console.error('Cannot evaluate round: one or both players have not made a move');
       return; // Cannot proceed without moves
+    }
+    
+    // Calculate scores based on result
+    let score1 = 0;
+    let score2 = 0;
+    
+    if (result === 'draw') {
+      score1 = SCORING.DRAW;
+      score2 = SCORING.DRAW;
+    } else if (result === 'player1') {
+      score1 = SCORING.WIN;
+      score2 = SCORING.LOSE;
+    } else {
+      score1 = SCORING.LOSE;
+      score2 = SCORING.WIN;
     }
     
     // Update scores and history
@@ -322,11 +227,8 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
       moves: {
         [player1]: move1,
         [player2]: move2
-      },
-      results: {
-        [player1]: result1,
-        [player2]: result2
-      },
+      } as Record<string, Move>, // Add type assertion to fix TypeScript error
+      result,
       scores: {
         [player1]: score1,
         [player2]: score2
@@ -337,12 +239,12 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
     const updatedPlayerData = {
       [player1]: {
         totalScore: currentState.playerData[player1].totalScore + score1,
-        currentMove: "", // Using empty string instead of null to ensure it's preserved in Firebase
+        currentMove: null,
         ready: false
       },
       [player2]: {
         totalScore: currentState.playerData[player2].totalScore + score2,
-        currentMove: "", // Using empty string instead of null to ensure it's preserved in Firebase
+        currentMove: null,
         ready: false
       }
     };
@@ -397,26 +299,38 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
         // Update player 2's tournament stats
         tournamentResults[player2].totalScore += score2;
         
-        // If game is completed, update matches played and win/loss/draw counts
+        // Update wins/losses/draws counts based on the result
+        if (result === 'draw') {
+          tournamentResults[player1].draws += 1;
+          tournamentResults[player2].draws += 1;
+        } else if (result === 'player1') {
+          tournamentResults[player1].wins += 1;
+          tournamentResults[player2].losses += 1;
+        } else {
+          tournamentResults[player1].losses += 1;
+          tournamentResults[player2].wins += 1;
+        }
+        
+        // If game is completed, update matches played
         if (isLastRound) {
           // Increment matches played
           tournamentResults[player1].matchesPlayed += 1;
           tournamentResults[player2].matchesPlayed += 1;
           
-          // Determine winner based on total score
+          // Determine overall winner
           const totalScore1 = updatedPlayerData[player1].totalScore;
           const totalScore2 = updatedPlayerData[player2].totalScore;
           
           if (totalScore1 > totalScore2) {
-            // Player 1 wins
+            // Player 1 wins overall
             tournamentResults[player1].wins += 1;
             tournamentResults[player2].losses += 1;
           } else if (totalScore1 < totalScore2) {
-            // Player 2 wins
+            // Player 2 wins overall
             tournamentResults[player1].losses += 1;
             tournamentResults[player2].wins += 1;
           } else {
-            // Draw
+            // Draw overall
             tournamentResults[player1].draws += 1;
             tournamentResults[player2].draws += 1;
           }
@@ -439,19 +353,23 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
     }
   };
   
-  // Get the opponent of the current player
-  const getOpponent = (): Player | undefined => {
-    if (!currentPlayerId || !players || players.length < 2) return undefined;
-    return players.find(player => player.id !== currentPlayerId);
+  // Function to render the emoji for a move
+  const renderMoveEmoji = (playerMove: Move | null | undefined) => {
+    if (playerMove === 'rock') return '👊';
+    if (playerMove === 'paper') return '✋';
+    if (playerMove === 'scissors') return '✌️';
+    return '❓';
   };
   
-  const opponent = getOpponent();
-  
-  // Function to get result text
-  const getResultText = (result: Result) => {
-    if (result === 'win') return 'Win';
-    if (result === 'lose') return 'Loss';
-    return 'Draw';
+  // Function to get the game result description
+  const getResultDescription = (roundResult: Result, isCurrentUser: boolean): string => {
+    if (roundResult === 'draw') return 'Empate';
+    
+    if (isCurrentUser) {
+      return roundResult === 'player1' ? 'Victoria' : 'Derrota';
+    } else {
+      return roundResult === 'player2' ? 'Victoria' : 'Derrota';
+    }
   };
   
   // Function to handle exiting the game
@@ -461,10 +379,18 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
       await finishGame();
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to exit game');
+      setError(err.message || 'Error al salir del juego');
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Function to get move name in Spanish
+  const getMoveName = (moveType: Move | null | undefined): string => {
+    if (moveType === 'rock') return 'Piedra';
+    if (moveType === 'paper') return 'Papel';
+    if (moveType === 'scissors') return 'Tijeras';
+    return 'Desconocido';
   };
   
   return (
@@ -479,51 +405,56 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : hasMoved 
-              ? "Waiting for your opponent..." 
-              : "Make your move"}
+              ? "Esperando a tu oponente..." 
+              : "Elige tu movimiento"}
         </p>
       </div>
       
       {/* Current Round Overview (if game has history) */}
       {gameState.history && gameState.history.length > 0 && !isGameOver && (
         <div className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Last Round</h3>
+          <h3 className="text-lg font-medium mb-3">Última Ronda</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const isCurrentPlayer = player.id === currentPlayerId;
               const lastRound = gameState.history[gameState.history.length - 1];
               const playerMove = lastRound.moves[player.id];
-              const playerResult = lastRound.results[player.id];
               const playerScore = lastRound.scores[player.id];
               const totalScore = gameState.playerData[player.id]?.totalScore || 0;
+              const roundResult = isCurrentPlayer 
+                ? (player.id === Object.keys(currentSession.players)[0] ? lastRound.result === 'player1' : lastRound.result === 'player2') 
+                : (player.id === Object.keys(currentSession.players)[0] ? lastRound.result === 'player2' : lastRound.result === 'player1');
               
               return (
                 <div key={player.id} className={`rounded-lg p-3 ${isCurrentPlayer ? 'bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20' : 'bg-gray-100 dark:bg-gray-700'}`}>
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">{player.displayName}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600">
-                      {isCurrentPlayer ? 'You' : 'Opponent'}
+                      {isCurrentPlayer ? 'Tú' : 'Oponente'}
                     </span>
                   </div>
                   <div className="flex items-center mb-1">
                     <span className="text-2xl mr-2">{renderMoveEmoji(playerMove)}</span>
-                    <span className={`font-medium ${
-                      playerResult === 'win' ? 'text-green-600 dark:text-green-400' : 
-                      playerResult === 'lose' ? 'text-red-600 dark:text-red-400' : 
-                      'text-gray-600 dark:text-gray-400'
-                    }`}>
-                      {getResultText(playerResult)}
-                    </span>
+                    <span>{getMoveName(playerMove)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>This round: {playerScore > 0 ? '+' : ''}{playerScore} pts</span>
+                    <span className={`${
+                      lastRound.result === 'draw' 
+                        ? 'text-gray-600' 
+                        : (roundResult ? 'text-green-600' : 'text-red-600')
+                    }`}>
+                      {getResultDescription(
+                        roundResult ? 'player1' : roundResult === 'draw' ? 'draw' : 'player2', 
+                        isCurrentPlayer
+                      )}
+                    </span>
                     <span className="font-bold">Total: {totalScore} pts</span>
                   </div>
                 </div>
@@ -538,108 +469,111 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
         <div className="flex flex-col items-center mb-8">
           <div className="grid grid-cols-3 gap-4 w-full max-w-md">
             <button
-              onClick={() => {
-                console.log("Rock button clicked, hasMoved:", hasMoved, "move:", move);
-                if (!hasMoved && isInProgress) makeMove('rock');
-              }}
+              onClick={() => makeMove('rock')}
               disabled={loading || hasMoved}
               className={`p-6 rounded-lg border-2 transition-all ${
-                move === 'rock'
-                  ? 'bg-blue-100 border-blue-500 dark:bg-blue-900 dark:border-blue-400'
-                  : 'border-gray-300 hover:border-blue-500 dark:border-gray-600 dark:hover:border-blue-400'
+                hasMoved && move === 'rock'
+                  ? 'bg-gray-100 border-gray-500 dark:bg-gray-800 dark:border-gray-400'
+                  : 'border-gray-300 hover:border-gray-500 dark:border-gray-600 dark:hover:border-gray-400'
               }`}
             >
               <div className="flex flex-col items-center">
-                <span className="text-4xl mb-2">✊</span>
-                <h4 className="font-bold">Rock</h4>
+                <span className="text-4xl mb-2">👊</span>
+                <h4 className="font-bold mb-1">Piedra</h4>
               </div>
             </button>
             
             <button
-              onClick={() => {
-                console.log("Paper button clicked, hasMoved:", hasMoved, "move:", move);
-                if (!hasMoved && isInProgress) makeMove('paper');
-              }}
+              onClick={() => makeMove('paper')}
               disabled={loading || hasMoved}
               className={`p-6 rounded-lg border-2 transition-all ${
-                move === 'paper'
-                  ? 'bg-green-100 border-green-500 dark:bg-green-900 dark:border-green-400'
-                  : 'border-gray-300 hover:border-green-500 dark:border-gray-600 dark:hover:border-green-400'
+                hasMoved && move === 'paper'
+                  ? 'bg-gray-100 border-gray-500 dark:bg-gray-800 dark:border-gray-400'
+                  : 'border-gray-300 hover:border-gray-500 dark:border-gray-600 dark:hover:border-gray-400'
               }`}
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">✋</span>
-                <h4 className="font-bold">Paper</h4>
+                <h4 className="font-bold mb-1">Papel</h4>
               </div>
             </button>
             
             <button
-              onClick={() => {
-                console.log("Scissors button clicked, hasMoved:", hasMoved, "move:", move);
-                if (!hasMoved && isInProgress) makeMove('scissors');
-              }}
+              onClick={() => makeMove('scissors')}
               disabled={loading || hasMoved}
               className={`p-6 rounded-lg border-2 transition-all ${
-                move === 'scissors'
-                  ? 'bg-purple-100 border-purple-500 dark:bg-purple-900 dark:border-purple-400'
-                  : 'border-gray-300 hover:border-purple-500 dark:border-gray-600 dark:hover:border-purple-400'
+                hasMoved && move === 'scissors'
+                  ? 'bg-gray-100 border-gray-500 dark:bg-gray-800 dark:border-gray-400'
+                  : 'border-gray-300 hover:border-gray-500 dark:border-gray-600 dark:hover:border-gray-400'
               }`}
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">✌️</span>
-                <h4 className="font-bold">Scissors</h4>
+                <h4 className="font-bold mb-1">Tijeras</h4>
               </div>
             </button>
           </div>
           
           {hasMoved && (
             <p className="mt-4 text-gray-600 dark:text-gray-400">
-              You chose <span className="font-medium">
-                {getMoveDisplayText(getDisplayMove())}
-              </span>. Waiting for your opponent...
+              Has elegido {getMoveName(move)}. Esperando a tu oponente...
             </p>
           )}
+        </div>
+      )}
+      
+      {/* Game Rules */}
+      {isInProgress && !isGameOver && !hasMoved && (
+        <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-center max-w-md mx-auto">
+          <h4 className="font-semibold mb-2">Reglas del Juego</h4>
+          <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+            <li>• Piedra vence a Tijeras</li>
+            <li>• Papel vence a Piedra</li>
+            <li>• Tijeras vencen a Papel</li>
+          </ul>
         </div>
       )}
       
       {/* Game Results */}
       {isGameOver && gameState.history && gameState.history.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Game Results</h3>
+          <h3 className="text-lg font-semibold mb-4">Resultados del Juego</h3>
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <div className="grid grid-cols-5 font-medium border-b dark:border-gray-700 pb-2 mb-2">
-              <div>Round</div>
-              <div>Your Move</div>
-              <div>Opponent's Move</div>
-              <div>Result</div>
-              <div>Points</div>
+            <div className="grid grid-cols-4 font-medium border-b dark:border-gray-700 pb-2 mb-2">
+              <div>Ronda</div>
+              <div>Tu Jugada</div>
+              <div>Jugada del Oponente</div>
+              <div>Resultado</div>
             </div>
             {gameState.history.map((round, index) => {
               if (!currentPlayerId || !opponent) return null;
               const yourMove = round.moves[currentPlayerId];
               const opponentMove = round.moves[opponent.id];
-              const yourResult = round.results[currentPlayerId];
-              const yourScore = round.scores[currentPlayerId];
+              const isPlayer1 = currentPlayerId === Object.keys(currentSession.players)[0];
+              const result = 
+                round.result === 'draw' ? 'Empate' : 
+                (isPlayer1 && round.result === 'player1') || (!isPlayer1 && round.result === 'player2') 
+                  ? 'Victoria' 
+                  : 'Derrota';
               
               return (
-                <div key={index} className="grid grid-cols-5 py-2 border-b dark:border-gray-700 last:border-0">
+                <div key={index} className="grid grid-cols-4 py-2 border-b dark:border-gray-700 last:border-0">
                   <div>{round.round}</div>
                   <div className="flex items-center">
-                    <span className="text-xl mr-1">{renderMoveEmoji(yourMove)}</span> 
-                    {yourMove}
+                    <span className="mr-1">{renderMoveEmoji(yourMove)}</span> 
+                    {getMoveName(yourMove)}
                   </div>
                   <div className="flex items-center">
-                    <span className="text-xl mr-1">{renderMoveEmoji(opponentMove)}</span>
-                    {opponentMove}
+                    <span className="mr-1">{renderMoveEmoji(opponentMove)}</span>
+                    {getMoveName(opponentMove)}
                   </div>
-                  <div className={`${
-                    yourResult === 'win' ? 'text-green-600 dark:text-green-400' : 
-                    yourResult === 'lose' ? 'text-red-600 dark:text-red-400' : 
-                    'text-gray-600 dark:text-gray-400'
-                  }`}>
-                    {getResultText(yourResult)}
+                  <div className={`
+                    ${result === 'Empate' ? 'text-gray-600' : ''}
+                    ${result === 'Victoria' ? 'text-green-600' : ''}
+                    ${result === 'Derrota' ? 'text-red-600' : ''}
+                  `}>
+                    {result}
                   </div>
-                  <div>{yourScore > 0 ? '+' : ''}{yourScore}</div>
                 </div>
               );
             })}
@@ -652,7 +586,7 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
                 
                 return (
                   <div key={player.id} className="text-center">
-                    <div className="font-medium mb-1">{player.displayName} {isCurrentPlayer ? '(You)' : ''}</div>
+                    <div className="font-medium mb-1">{player.displayName} {isCurrentPlayer ? '(Tú)' : ''}</div>
                     <div className="text-2xl font-bold">{playerData.totalScore} pts</div>
                   </div>
                 );
@@ -665,7 +599,7 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
       {/* Final Scores */}
       {isGameOver && (
         <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 p-6 rounded-lg mb-8">
-          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Final Scores</h3>
+          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Puntuaciones Finales</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const playerData = gameState.playerData[player.id];
@@ -675,12 +609,15 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
               const isWinner = Object.values(gameState.playerData).every(
                 p => p.totalScore <= playerData.totalScore
               );
+              const isTie = Object.values(gameState.playerData).some(
+                p => p !== playerData && p.totalScore === playerData.totalScore
+              );
               
               return (
                 <div 
                   key={player.id} 
                   className={`p-4 rounded-lg ${
-                    isWinner 
+                    isWinner && !isTie
                       ? 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-300 dark:border-yellow-600' 
                       : 'bg-white dark:bg-gray-800'
                   }`}
@@ -689,12 +626,12 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
                     {player.displayName}
                     {isCurrentPlayer && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                        You
+                        Tú
                       </span>
                     )}
-                    {isWinner && (
+                    {isWinner && !isTie && (
                       <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
-                        Winner
+                        Ganador
                       </span>
                     )}
                   </div>
@@ -708,14 +645,14 @@ const RockPaperScissorsGame: React.FC<RockPaperScissorsGameProps> = ({ onGameUpd
         </div>
       )}
       
-      {/* Play Again Button */}
+      {/* Return to Dashboard Button */}
       {isGameOver && (
         <div className="text-center">
           <button
             onClick={handleExitGame}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
           >
-            Return to Dashboard
+            Volver al Panel
           </button>
         </div>
       )}

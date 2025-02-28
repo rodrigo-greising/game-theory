@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, Player } from '@/context/SessionContext';
 import { PrisonersDilemmaState, Decision, SCORING } from '@/games/prisonersDilemma';
+import PrisonersDilemma from '@/games/prisonersDilemma';
 import { useRouter } from 'next/navigation';
 import { database } from '@/config/firebaseClient';
 import { ref, update } from 'firebase/database';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 
 interface PrisonersDilemmaGameProps {
   onGameUpdate?: (gameState: PrisonersDilemmaState) => void;
@@ -16,6 +19,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [isEducationalModalOpen, setIsEducationalModalOpen] = useState(false);
   const router = useRouter();
   
   // Make sure we have the required session data
@@ -295,7 +299,37 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
   };
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-[500px]">
+      {/* Add an educational content button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setIsEducationalModalOpen(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm"
+        >
+          Aprender sobre este juego
+        </button>
+      </div>
+
+      {/* Educational Content Modal */}
+      <Dialog open={isEducationalModalOpen} onOpenChange={setIsEducationalModalOpen}>
+        <DialogContent className="bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-xl font-semibold">El Dilema del Prisionero</DialogTitle>
+              <button 
+                onClick={() => setIsEducationalModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <div dangerouslySetInnerHTML={{ __html: PrisonersDilemma.educationalContent || '' }} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -307,15 +341,15 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "¡Los resultados finales están listos!" 
             : hasDecided 
-              ? "Waiting for your opponent..." 
-              : "Make your decision"}
+              ? "Esperando a tu oponente..." 
+              : "Toma tu decisión"}
         </p>
       </div>
       
@@ -334,8 +368,8 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
             >
               <div className="text-center">
                 <div className="text-5xl mb-4">🤝</div>
-                <h4 className="font-bold text-lg mb-1">Cooperate</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Stay silent</p>
+                <h4 className="font-bold text-lg mb-1">Cooperar</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Permanecer en silencio</p>
               </div>
             </button>
             
@@ -350,16 +384,16 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
             >
               <div className="text-center">
                 <div className="text-5xl mb-4">👉</div>
-                <h4 className="font-bold text-lg mb-1">Defect</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Betray the other</p>
+                <h4 className="font-bold text-lg mb-1">Delatar</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Traicionar al otro</p>
               </div>
             </button>
           </div>
           
           {hasDecided && (
             <div className="mt-6 text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p>You've chosen to <strong>{decision === 'cooperate' ? 'cooperate' : 'defect'}</strong></p>
-              <p className="text-sm text-gray-500 mt-1">Waiting for {opponent?.displayName} to make a decision...</p>
+              <p>Has elegido <strong>{decision === 'cooperate' ? 'cooperar' : 'delatar'}</strong></p>
+              <p className="text-sm text-gray-500 mt-1">Esperando a que {opponent?.displayName} tome una decisión...</p>
             </div>
           )}
         </div>
@@ -368,17 +402,17 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
       {/* Game Results */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-left">You</th>
-                  <th className="py-2 text-left">{opponent?.displayName || 'Opponent'}</th>
-                  <th className="py-2 text-right">Your Points</th>
-                  <th className="py-2 text-right">Their Points</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-left">Tú</th>
+                  <th className="py-2 text-left">{opponent?.displayName || 'Oponente'}</th>
+                  <th className="py-2 text-right">Tus Puntos</th>
+                  <th className="py-2 text-right">Sus Puntos</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,13 +427,13 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
                       <td className="py-2">{round.round}</td>
                       <td className="py-2">
                         {currentPlayerId && round.decisions && round.decisions[currentPlayerId] === 'cooperate' 
-                          ? '🤝 Cooperate' 
-                          : '👉 Defect'}
+                          ? '🤝 Cooperar' 
+                          : '👉 Delatar'}
                       </td>
                       <td className="py-2">
                         {opponent && opponent.id && round.decisions && round.decisions[opponent.id] === 'cooperate' 
-                          ? '🤝 Cooperate' 
-                          : '👉 Defect'}
+                          ? '🤝 Cooperar' 
+                          : '👉 Delatar'}
                       </td>
                       <td className="py-2 text-right">
                         {currentPlayerId && round.scores && round.scores[currentPlayerId]}
@@ -414,7 +448,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
               {isGameOver && gameState.playerData && (
                 <tfoot>
                   <tr className="font-bold">
-                    <td colSpan={3} className="py-2 text-right">Final Score:</td>
+                    <td colSpan={3} className="py-2 text-right">Puntuación Final:</td>
                     <td className="py-2 text-right">
                       {currentPlayerId && gameState.playerData && 
                        gameState.playerData[currentPlayerId]?.totalScore}
@@ -432,10 +466,10 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
           {/* Add Game Over summary with larger display of total points */}
           {isGameOver && (
             <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-              <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+              <h2 className="text-2xl font-bold mb-4">¡Juego Completado!</h2>
               <div className="flex justify-center items-center gap-8">
                 <div className="flex flex-col items-center">
-                  <p className="text-lg font-medium">Your Score</p>
+                  <p className="text-lg font-medium">Tu Puntuación</p>
                   <p className="text-4xl font-bold mt-2">
                     {currentPlayerId && gameState.playerData && 
                      gameState.playerData[currentPlayerId]?.totalScore}
@@ -443,7 +477,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
                 </div>
                 <div className="text-2xl font-bold">vs</div>
                 <div className="flex flex-col items-center">
-                  <p className="text-lg font-medium">{opponent?.displayName || 'Opponent'}'s Score</p>
+                  <p className="text-lg font-medium">Puntuación de {opponent?.displayName || 'Oponente'}</p>
                   <p className="text-4xl font-bold mt-2">
                     {opponent && opponent.id && gameState.playerData && 
                      gameState.playerData[opponent.id]?.totalScore}
@@ -455,7 +489,7 @@ const PrisonersDilemmaGame: React.FC<PrisonersDilemmaGameProps> = ({ onGameUpdat
                   onClick={handleExitGame}
                   className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
                 >
-                  Return to Dashboard
+                  Volver al Panel
                 </button>
               </div>
             </div>

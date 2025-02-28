@@ -22,7 +22,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Game state not available.</p>
+        <p className="text-red-500">Estado del juego no disponible.</p>
       </div>
     );
   }
@@ -82,7 +82,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
           
           await updateGameState(updatedGameState);
         } catch (err: any) {
-          setError(err.message || 'Failed to start game');
+          setError(err.message || 'No se pudo iniciar el juego');
         } finally {
           setLoading(false);
         }
@@ -99,7 +99,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
         <div className="animate-pulse mb-4">
           <span className="text-5xl">💰 💼</span>
         </div>
-        <h3 className="text-xl font-semibold mb-4">Loading Game...</h3>
+        <h3 className="text-xl font-semibold mb-4">Cargando Juego...</h3>
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
@@ -109,8 +109,8 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere 2 jugadores</p>
       </div>
     );
   }
@@ -171,7 +171,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       
       await updateGameState(updatedGameState);
     } catch (err: any) {
-      setError(err.message || 'Failed to submit proposal');
+      setError(err.message || 'No se pudo enviar la propuesta');
     } finally {
       setLoading(false);
     }
@@ -187,14 +187,14 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
     try {
       // Ensure we have the current proposal
       if (!gameState.history || gameState.history.length === 0) {
-        throw new Error('No game history found');
+        throw new Error('No se encontró el historial del juego');
       }
       
       const currentHistory = gameState.history[gameState.history.length - 1];
       const proposerId = currentHistory.proposal?.proposerId;
       
       if (!proposerId || !currentHistory.proposal) {
-        throw new Error('No proposal found to respond to');
+        throw new Error('No se encontró ninguna propuesta para responder');
       }
       
       // Calculate scores based on the response
@@ -262,7 +262,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
         try {
           await updateTournamentResults(updatedPlayerData, proposerId, currentPlayerId);
         } catch (error) {
-          console.error('Error updating tournament results:', error);
+          console.error('Error al actualizar los resultados del torneo:', error);
         }
       }
       
@@ -298,7 +298,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
         onGameUpdate(updatedGameState);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to submit response');
+      setError(err.message || 'No se pudo enviar la respuesta');
     } finally {
       setLoading(false);
     }
@@ -364,7 +364,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       await finishGame();
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to exit game');
+      setError(err.message || 'No se pudo salir del juego');
     } finally {
       setLoading(false);
     }
@@ -397,7 +397,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       
       await updateGameState(updatedGameState);
     } catch (err: any) {
-      setError(err.message || 'Failed to start next round');
+      setError(err.message || 'No se pudo iniciar la siguiente ronda');
     } finally {
       setLoading(false);
     }
@@ -417,15 +417,15 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       if (currentPlayerRole === 'proposer') {
         return (
           <div className="flex flex-col items-center mb-8">
-            <h3 className="text-lg font-semibold mb-4">Make Your Offer</h3>
+            <h3 className="text-lg font-semibold mb-4">Haz Tu Oferta</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              How much of the {gameState.totalAmount} points will you offer to your opponent?
+              ¿Cuántos de los {gameState.totalAmount} puntos ofrecerás a tu oponente?
             </p>
             
             <div className="w-full max-w-md">
               <div className="flex items-center justify-between mb-2">
-                <span>You get: {gameState.totalAmount - proposalAmount}</span>
-                <span>They get: {proposalAmount}</span>
+                <span>Tú recibes: {gameState.totalAmount - proposalAmount}</span>
+                <span>Ellos reciben: {proposalAmount}</span>
               </div>
               
               <input
@@ -448,7 +448,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                 disabled={loading || hasActed}
                 className="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Submitting...' : hasActed ? 'Offer Sent' : 'Submit Offer'}
+                {loading ? 'Enviando...' : hasActed ? 'Oferta Enviada' : 'Enviar Oferta'}
               </button>
             </div>
           </div>
@@ -460,9 +460,9 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
             <div className="animate-pulse mb-4">
               <span className="text-4xl">⏳</span>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Waiting for Offer</h3>
+            <h3 className="text-lg font-semibold mb-2">Esperando Oferta</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              The other player is deciding how to split the {gameState.totalAmount} points.
+              El otro jugador está decidiendo cómo dividir los {gameState.totalAmount} puntos.
             </p>
           </div>
         );
@@ -477,16 +477,16 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
         
         return (
           <div className="flex flex-col items-center mb-8">
-            <h3 className="text-lg font-semibold mb-4">Respond to the Offer</h3>
+            <h3 className="text-lg font-semibold mb-4">Responde a la Oferta</h3>
             
             <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg mb-6 w-full max-w-md">
               <p className="text-center mb-4">
-                Your opponent has offered you <span className="font-bold text-xl">{proposedAmount}</span> out of {gameState.totalAmount} points
+                Tu oponente te ha ofrecido <span className="font-bold text-xl">{proposedAmount}</span> de {gameState.totalAmount} puntos
               </p>
               
               <div className="flex justify-between items-center">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Your Opponent Gets</p>
+                  <p className="text-sm text-gray-500">Tu Oponente Recibe</p>
                   <p className="text-xl font-bold">{proposerKeeps}</p>
                 </div>
                 <div className="flex-1 px-4">
@@ -501,7 +501,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
               
               <div className="flex justify-between items-center mt-2">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">You Get</p>
+                  <p className="text-sm text-gray-500">Tú Recibes</p>
                   <p className="text-xl font-bold">{proposedAmount}</p>
                 </div>
                 <div className="flex-1 px-4">
@@ -521,7 +521,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                 disabled={loading || hasActed}
                 className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Accept
+                Aceptar
               </button>
               
               <button
@@ -529,13 +529,13 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                 disabled={loading || hasActed}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Reject
+                Rechazar
               </button>
             </div>
             
             {hasActed && (
               <p className="mt-4 text-gray-600 dark:text-gray-300">
-                Your response has been recorded. Waiting for the next round...
+                Tu respuesta ha sido registrada. Esperando la siguiente ronda...
               </p>
             )}
           </div>
@@ -547,16 +547,16 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
             <div className="animate-pulse mb-4">
               <span className="text-4xl">⌛</span>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Waiting for Response</h3>
+            <h3 className="text-lg font-semibold mb-2">Esperando Respuesta</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              The other player is deciding whether to accept or reject your offer.
+              El otro jugador está decidiendo si aceptar o rechazar tu oferta.
             </p>
             {currentHistoryEntry && currentHistoryEntry.proposal && (
               <div className="mt-4">
-                <p className="font-medium">Your Offer:</p>
+                <p className="font-medium">Tu Oferta:</p>
                 <p className="text-lg">
-                  You: {gameState.totalAmount - currentHistoryEntry.proposal.amount} points | 
-                  Them: {currentHistoryEntry.proposal.amount} points
+                  Tú: {gameState.totalAmount - currentHistoryEntry.proposal.amount} puntos | 
+                  Ellos: {currentHistoryEntry.proposal.amount} puntos
                 </p>
               </div>
             )}
@@ -574,26 +574,26 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
         
         return (
           <div className="text-center p-6 bg-gray-50 dark:bg-gray-800 rounded-lg mb-8">
-            <h3 className="text-xl font-semibold mb-4">Round {gameState.round} Results</h3>
+            <h3 className="text-xl font-semibold mb-4">Resultados de la Ronda {gameState.round}</h3>
             
             <div className="mb-6">
               <p className="text-lg mb-2">
-                The offer was <span className={`font-bold ${wasAccepted ? 'text-green-600' : 'text-red-600'}`}>
-                  {wasAccepted ? 'ACCEPTED' : 'REJECTED'}
+                La oferta fue <span className={`font-bold ${wasAccepted ? 'text-green-600' : 'text-red-600'}`}>
+                  {wasAccepted ? 'ACEPTADA' : 'RECHAZADA'}
                 </span>
               </p>
               
               <div className="flex justify-between items-center mt-4 p-4 bg-white dark:bg-gray-700 rounded-lg">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Proposer</p>
+                  <p className="text-sm text-gray-500">Proponente</p>
                   <p className="font-bold">
-                    {wasAccepted ? proposerKeeps : 0} points
+                    {wasAccepted ? proposerKeeps : 0} puntos
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Responder</p>
+                  <p className="text-sm text-gray-500">Respondedor</p>
                   <p className="font-bold">
-                    {wasAccepted ? proposedAmount : 0} points
+                    {wasAccepted ? proposedAmount : 0} puntos
                   </p>
                 </div>
               </div>
@@ -602,7 +602,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
             {gameState.round < gameState.maxRounds && (
               <div className="mt-6">
                 <p className="mb-2 text-gray-600 dark:text-gray-300">
-                  For the next round, roles will be switched.
+                  Para la siguiente ronda, los roles se intercambiarán.
                 </p>
                 
                 {isHost && (
@@ -610,7 +610,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                     onClick={startNextRound}
                     className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-lg font-medium"
                   >
-                    Start Next Round
+                    Iniciar Siguiente Ronda
                   </button>
                 )}
               </div>
@@ -635,15 +635,15 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "¡Los resultados finales están listos!" 
             : currentPlayerRole 
-              ? `You are the ${currentPlayerRole} this round` 
-              : "Waiting..."}
+              ? `Tú eres el ${currentPlayerRole === 'proposer' ? 'proponente' : 'respondedor'} en esta ronda` 
+              : "Esperando..."}
         </p>
       </div>
       
@@ -653,18 +653,18 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       {/* Game History */}
       {gameState.history && gameState.history.length > 0 && (
         <div className="mt-auto mb-8">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-left">Proposer</th>
-                  <th className="py-2 text-left">Offer</th>
-                  <th className="py-2 text-left">Response</th>
-                  <th className="py-2 text-right">Proposer Points</th>
-                  <th className="py-2 text-right">Responder Points</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-left">Proponente</th>
+                  <th className="py-2 text-left">Oferta</th>
+                  <th className="py-2 text-left">Respuesta</th>
+                  <th className="py-2 text-right">Puntos Proponente</th>
+                  <th className="py-2 text-right">Puntos Respondedor</th>
                 </tr>
               </thead>
               <tbody>
@@ -681,8 +681,8 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                   
                   if (!responderId) return null;
                   
-                  const proposerName = currentSession.players[proposerId]?.displayName || 'Unknown';
-                  const responderName = currentSession.players[responderId]?.displayName || 'Unknown';
+                  const proposerName = currentSession.players[proposerId]?.displayName || 'Desconocido';
+                  const responderName = currentSession.players[responderId]?.displayName || 'Desconocido';
                   const wasAccepted = round.response === 'accept';
                   const proposerScore = round.scores ? round.scores[proposerId] || 0 : 0;
                   const responderScore = round.scores ? round.scores[responderId] || 0 : 0;
@@ -695,9 +695,9 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                       <td className="py-2">
                         {round.response 
                           ? round.response === 'accept' 
-                            ? '✅ Accepted' 
-                            : '❌ Rejected' 
-                          : '⏳ Waiting...'}
+                            ? '✅ Aceptada' 
+                            : '❌ Rechazada' 
+                          : '⏳ Esperando...'}
                       </td>
                       <td className="py-2 text-right">{proposerScore}</td>
                       <td className="py-2 text-right">{responderScore}</td>
@@ -708,7 +708,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
               {isGameOver && gameState.playerData && (
                 <tfoot>
                   <tr className="font-bold">
-                    <td colSpan={4} className="py-2 text-right">Final Score:</td>
+                    <td colSpan={4} className="py-2 text-right">Puntuación Final:</td>
                     {players.map(player => (
                       <td key={player.id} className="py-2 text-right">
                         {gameState.playerData[player.id]?.totalScore || 0}
@@ -725,7 +725,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
       {/* Final Scores */}
       {isGameOver && (
         <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 p-6 rounded-lg mb-8">
-          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Final Scores</h3>
+          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Puntuaciones Finales</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const playerData = gameState.playerData[player.id];
@@ -749,12 +749,12 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
                     {player.displayName}
                     {isCurrentPlayer && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                        You
+                        Tú
                       </span>
                     )}
                     {isWinner && (
                       <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
-                        Winner
+                        Ganador
                       </span>
                     )}
                   </div>
@@ -775,7 +775,7 @@ const UltimatumGame: React.FC<UltimatumGameProps> = ({ onGameUpdate }) => {
             onClick={handleExitGame}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
           >
-            Return to Dashboard
+            Volver al Panel
           </button>
         </div>
       )}

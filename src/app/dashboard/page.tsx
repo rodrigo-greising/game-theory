@@ -59,13 +59,13 @@ export default function DashboardPage() {
                 href="/"
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium"
               >
-                Home
+                Inicio
               </Link>
             </div>
           </header>
           
           <main className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8 text-center">Game Dashboard</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center">Panel de Juego</h1>
             
             {currentSession ? (
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
@@ -78,13 +78,13 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700 text-center">
-                <h2 className="text-xl font-semibold mb-4">Not In a Session</h2>
-                <p className="text-gray-300 mb-6">You are currently not part of any game session.</p>
+                <h2 className="text-xl font-semibold mb-4">No estás en una sesión</h2>
+                <p className="text-gray-300 mb-6">Actualmente no formas parte de ninguna sesión de juego.</p>
                 <Link 
                   href="/"
                   className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
                 >
-                  Join or Create a Session
+                  Unirse o Crear una Sesión
                 </Link>
               </div>
             )}

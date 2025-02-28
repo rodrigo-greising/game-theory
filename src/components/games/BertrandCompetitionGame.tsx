@@ -415,15 +415,15 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "¡Los resultados finales están listos!" 
             : hasPriced 
-              ? "Waiting for other players..." 
-              : "Set your price"}
+              ? "Esperando a otros jugadores..." 
+              : "Establece tu precio"}
         </p>
       </div>
       
@@ -431,11 +431,11 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
       {isInProgress && !isGameOver && (
         <div className="flex flex-col items-center mb-8">
           <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-            <h4 className="font-bold text-lg mb-4 text-center">Your Price</h4>
+            <h4 className="font-bold text-lg mb-4 text-center">Tu Precio</h4>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center">
-              Choose a price between ${gameState.minPrice} and ${gameState.maxPrice}.
-              Remember, consumers will buy from the firm offering the lowest price.
-              If multiple firms set the same lowest price, they share the market equally.
+              Elige un precio entre ${gameState.minPrice} y ${gameState.maxPrice}.
+              Recuerda, los consumidores comprarán a la empresa que ofrezca el precio más bajo.
+              Si varias empresas establecen el mismo precio más bajo, compartirán el mercado equitativamente.
             </p>
             
             <div className="mb-6">
@@ -466,19 +466,19 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
                   : 'bg-blue-500 hover:bg-blue-600'
                 }`}
             >
-              {loading ? 'Submitting...' : hasPriced ? 'Price Submitted' : 'Submit Price'}
+              {loading ? 'Enviando...' : hasPriced ? 'Precio Enviado' : 'Enviar Precio'}
             </button>
           </div>
           
           {hasPriced && gameState.playerData && currentPlayerId && gameState.playerData[currentPlayerId] && (
             <div className="mt-6 text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p>You've set a price of <strong>${gameState.playerData[currentPlayerId]?.currentPrice}</strong></p>
+              <p>Has establecido un precio de <strong>${gameState.playerData[currentPlayerId]?.currentPrice}</strong></p>
               <p className="text-sm text-gray-500 mt-1">
-                Waiting for {Object.values(currentSession.players || {}).filter(p => 
+                Esperando a que {Object.values(currentSession.players || {}).filter(p => 
                   p.id !== currentPlayerId && 
                   (!gameState.playerData[p.id] || 
                    !gameState.playerData[p.id].ready)
-                ).map(p => p.displayName).join(', ')} to set prices...
+                ).map(p => p.displayName).join(', ')} establezcan precios...
               </p>
             </div>
           )}
@@ -488,17 +488,17 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
       {/* Game Results */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-right">Your Price</th>
-                  <th className="py-2 text-right">Lowest Price</th>
-                  <th className="py-2 text-right">Your Market Share</th>
-                  <th className="py-2 text-right">Your Profit</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-right">Tu Precio</th>
+                  <th className="py-2 text-right">Precio Más Bajo</th>
+                  <th className="py-2 text-right">Tu Cuota de Mercado</th>
+                  <th className="py-2 text-right">Tu Beneficio</th>
                 </tr>
               </thead>
               <tbody>
@@ -521,7 +521,7 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
                         ${lowestPrice}
                       </td>
                       <td className="py-2 text-right">
-                        {currentPlayerId && round.marketShares[currentPlayerId].toFixed(1)} units
+                        {currentPlayerId && round.marketShares[currentPlayerId].toFixed(1)} unidades
                       </td>
                       <td className="py-2 text-right">
                         ${currentPlayerId && round.profits[currentPlayerId].toFixed(2)}
@@ -533,7 +533,7 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
               {isGameOver && gameState.playerData && (
                 <tfoot>
                   <tr className="font-bold">
-                    <td colSpan={4} className="py-2 text-right">Total Profit:</td>
+                    <td colSpan={4} className="py-2 text-right">Beneficio Total:</td>
                     <td className="py-2 text-right">
                       ${currentPlayerId && gameState.playerData[currentPlayerId]?.totalScore.toFixed(2)}
                     </td>
@@ -546,9 +546,9 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
           {/* Add Game Over summary with larger display of total points */}
           {isGameOver && (
             <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-              <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+              <h2 className="text-2xl font-bold mb-4">¡Juego Completado!</h2>
               <div className="flex flex-col justify-center items-center gap-4">
-                <h3 className="text-xl font-semibold">Final Profits</h3>
+                <h3 className="text-xl font-semibold">Beneficios Finales</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mt-4">
                   {players.map(player => {
                     const isCurrentPlayer = player.id === currentPlayerId;
@@ -563,7 +563,7 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
                                    ${isCurrentPlayer ? 'border-2 border-blue-500' : ''}`}
                       >
                         <div className="font-medium text-lg">
-                          {isCurrentPlayer ? 'You' : player.displayName}
+                          {isCurrentPlayer ? 'Tú' : player.displayName}
                           {isWinner && <span className="ml-2">🏆</span>}
                         </div>
                         <div className="text-3xl font-bold mt-2">${playerScore.toFixed(2)}</div>
@@ -577,7 +577,7 @@ const BertrandCompetitionGame: React.FC<BertrandCompetitionGameProps> = ({ onGam
                   onClick={handleExitGame}
                   className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
                 >
-                  Return to Dashboard
+                  Volver al Panel
                 </button>
               </div>
             </div>

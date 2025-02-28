@@ -44,18 +44,12 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectError, setRedirectError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Set up auth state change listener
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    // Check for redirect result on component mount
     const handleRedirectResult = async () => {
-      setLoading(true);
       try {
+        // Process any redirect results first
         const result = await getRedirectResult(auth);
         if (result) {
           console.log('Successfully signed in with redirect');
@@ -63,19 +57,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         console.error('Error with redirect sign-in result:', error);
-        // Handle specific errors if needed
-      } finally {
-        setLoading(false);
+        setRedirectError(error as Error);
       }
     };
 
-    // Run the redirect result handler
+    // Always check for redirect result first when the component mounts
     if (typeof window !== 'undefined') {
-      handleRedirectResult();
+      handleRedirectResult()
+        .finally(() => {
+          // Set up auth state change listener after handling any redirects
+          const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUser(user);
+            setLoading(false);
+          });
+          
+          // Return cleanup function
+          return unsubscribe;
+        });
+    } else {
+      // For SSR contexts, just set up the auth state listener
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setLoading(false);
+      });
+      
+      return () => unsubscribe();
     }
-
-    // Clean up the subscription on unmount
-    return () => unsubscribe();
   }, []);
 
   // Sign in with email and password
@@ -98,14 +105,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Sign in with Google
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    // Add scopes or custom parameters if needed
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
     
     // First, try to detect if we're in a context that might have issues with popups
-    const isMobile = window.innerWidth <= 768;
-    const isEmbedded = window !== window.top;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const isEmbedded = typeof window !== 'undefined' && window !== window.top;
     const hasStorageIssues = (() => {
       try {
-        window.localStorage.getItem('test');
-        return false;
+        if (typeof window !== 'undefined') {
+          window.localStorage.getItem('test');
+          return false;
+        }
+        return true;
       } catch (e) {
         return true;
       }
@@ -114,15 +128,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Use redirect for contexts that might have issues with popups
     if (isMobile || isEmbedded || hasStorageIssues) {
       try {
+        console.log('Using redirect sign-in for mobile or embedded context');
+        setLoading(true);
         await signInWithRedirect(auth, provider);
         return null; // User will be set by getRedirectResult in useEffect
       } catch (error: any) {
         console.error('Error with redirect sign-in:', error);
+        setLoading(false);
         throw error;
       }
     } else {
       // On desktop, try popup first, but fall back to redirect if needed
       try {
+        console.log('Using popup sign-in for desktop context');
         const result = await signInWithPopup(auth, provider);
         return result.user;
       } catch (error: any) {
@@ -137,6 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           error.message?.includes('COOP')
         ) {
           console.log('Popup was blocked or closed, falling back to redirect...');
+          setLoading(true);
           await signInWithRedirect(auth, provider);
           return null;
         }

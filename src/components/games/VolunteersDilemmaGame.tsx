@@ -79,8 +79,8 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires at least 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere al menos 2 jugadores</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
   if (!gameState.playerData) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Initializing game data...</p>
+        <p className="text-yellow-500">Inicializando datos del juego...</p>
         <div className="mt-4 flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -389,15 +389,15 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : hasDecided 
-              ? "Waiting for other players..." 
-              : "Make your decision"}
+              ? "Esperando a otros jugadores..." 
+              : "Toma tu decisión"}
         </p>
       </div>
       
@@ -416,9 +416,9 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">🦸</span>
-                <h4 className="font-bold mb-1">Volunteer</h4>
+                <h4 className="font-bold mb-1">Ser Voluntario</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Everyone gets +{SCORING.PUBLIC_BENEFIT}, but you pay {SCORING.VOLUNTEER_COST}
+                  Todos reciben +{SCORING.PUBLIC_BENEFIT}, pero tú pagas {SCORING.VOLUNTEER_COST}
                 </p>
               </div>
             </button>
@@ -434,9 +434,9 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">🙋‍♂️</span>
-                <h4 className="font-bold mb-1">Don't Volunteer</h4>
+                <h4 className="font-bold mb-1">No Ser Voluntario</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Hope someone else volunteers so you get +{SCORING.PUBLIC_BENEFIT}
+                  Espera que alguien más sea voluntario para recibir +{SCORING.PUBLIC_BENEFIT}
                 </p>
               </div>
             </button>
@@ -444,7 +444,7 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
           
           {hasDecided && (
             <p className="mt-4 text-gray-600 dark:text-gray-400">
-              You decided to {decision === 'volunteer' ? 'volunteer' : 'not volunteer'}. Waiting for other players...
+              Has decidido {decision === 'volunteer' ? 'ser voluntario' : 'no ser voluntario'}. Esperando a otros jugadores...
             </p>
           )}
         </div>
@@ -453,16 +453,16 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
       {/* Game Results */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial de Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-center">Your Decision</th>
-                  <th className="py-2 text-center">Volunteers</th>
-                  <th className="py-2 text-right">Your Points</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-center">Tu Decisión</th>
+                  <th className="py-2 text-center">Voluntarios</th>
+                  <th className="py-2 text-right">Tus Puntos</th>
                 </tr>
               </thead>
               <tbody>
@@ -477,7 +477,7 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
                       <td className="py-2">{round.round}</td>
                       <td className="py-2 text-center">
                         <span className="mr-1">{renderDecisionEmoji(yourDecision)}</span> 
-                        {yourDecision === 'volunteer' ? 'Volunteer' : 'Not Volunteer'}
+                        {yourDecision === 'volunteer' ? 'Voluntario' : 'No Voluntario'}
                       </td>
                       <td className="py-2 text-center font-medium">
                         {round.volunteersCount} / {players.length}
@@ -492,7 +492,7 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
               {isGameOver && gameState.playerData && (
                 <tfoot>
                   <tr className="font-bold">
-                    <td colSpan={3} className="py-2 text-right">Final Score:</td>
+                    <td colSpan={3} className="py-2 text-right">Puntuación Final:</td>
                     <td className="py-2 text-right">
                       {currentPlayerId && gameState.playerData[currentPlayerId]?.totalScore}
                     </td>
@@ -505,9 +505,9 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
           {/* Add Game Over summary with larger display of total points */}
           {isGameOver && (
             <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-              <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+              <h2 className="text-2xl font-bold mb-4">¡Juego Completado!</h2>
               <div className="flex flex-col justify-center items-center gap-4">
-                <h3 className="text-xl font-semibold">Final Scores</h3>
+                <h3 className="text-xl font-semibold">Puntuaciones Finales</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mt-4">
                   {players.map(player => {
                     const isCurrentPlayer = player.id === currentPlayerId;
@@ -522,7 +522,7 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
                                    ${isCurrentPlayer ? 'border-2 border-blue-500' : ''}`}
                       >
                         <div className="font-medium text-lg">
-                          {isCurrentPlayer ? 'You' : player.displayName}
+                          {isCurrentPlayer ? 'Tú' : player.displayName}
                           {isWinner && <span className="ml-2">🏆</span>}
                         </div>
                         <div className="text-3xl font-bold mt-2">{playerScore}</div>
@@ -536,7 +536,7 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
                   onClick={handleExitGame}
                   className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
                 >
-                  Return to Dashboard
+                  Volver al Panel
                 </button>
               </div>
             </div>
@@ -547,12 +547,12 @@ const VolunteersDilemmaGame: React.FC<VolunteersDilemmaGameProps> = ({ onGameUpd
       {/* Game Information - Rules */}
       {!isGameOver && !hasDecided && (
         <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <h3 className="font-semibold mb-2">Game Rules</h3>
+          <h3 className="font-semibold mb-2">Reglas del Juego</h3>
           <ul className="text-sm space-y-1 list-disc pl-5">
-            <li>If at least one player volunteers, EVERYONE gets +{SCORING.PUBLIC_BENEFIT} points</li>
-            <li>However, each volunteer pays a cost of {SCORING.VOLUNTEER_COST} points</li>
-            <li>If NO ONE volunteers, EVERYONE gets {SCORING.NO_VOLUNTEER_PENALTY} points</li>
-            <li>Your goal: maximize your own points over {gameState.maxRounds} rounds</li>
+            <li>Si al menos un jugador es voluntario, TODOS reciben +{SCORING.PUBLIC_BENEFIT} puntos</li>
+            <li>Sin embargo, cada voluntario paga un costo de {SCORING.VOLUNTEER_COST} puntos</li>
+            <li>Si NADIE es voluntario, TODOS reciben {SCORING.NO_VOLUNTEER_PENALTY} puntos</li>
+            <li>Tu objetivo: maximizar tus propios puntos en {gameState.maxRounds} rondas</li>
           </ul>
         </div>
       )}

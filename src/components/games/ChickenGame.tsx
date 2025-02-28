@@ -22,7 +22,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Game state not available.</p>
+        <p className="text-red-500">Estado del juego no disponible.</p>
       </div>
     );
   }
@@ -65,7 +65,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
           
           await updateGameState(updatedGameState);
         } catch (err: any) {
-          setError(err.message || 'Failed to start game');
+          setError(err.message || 'Error al iniciar el juego');
         } finally {
           setLoading(false);
         }
@@ -82,7 +82,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
         <div className="animate-pulse mb-4">
           <span className="text-5xl">🚗 💥 🚗</span>
         </div>
-        <h3 className="text-xl font-semibold mb-4">Loading Game...</h3>
+        <h3 className="text-xl font-semibold mb-4">Cargando juego...</h3>
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
@@ -92,8 +92,8 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere 2 jugadores</p>
       </div>
     );
   }
@@ -155,7 +155,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
       
       setStrategy(selectedStrategy);
     } catch (err: any) {
-      setError(err.message || 'Failed to submit choice');
+      setError(err.message || 'Error al enviar la elección');
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
   const evaluateRound = async (currentState: ChickenState) => {
     const playerIds = Object.keys(currentSession.players || {});
     if (!playerIds || playerIds.length !== 2) {
-      console.error("Chicken requires exactly 2 players");
+      console.error("Chicken requiere exactamente 2 jugadores");
       return; // Chicken requires exactly 2 players
     }
     
@@ -198,7 +198,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
         score2 = SCORING.SWERVE_WHEN_OTHER_STRAIGHT;
       }
     } else {
-      console.error('Cannot evaluate round: one or both players have not made a choice');
+      console.error('No se puede evaluar la ronda: uno o ambos jugadores no han tomado una decisión');
       return; // Cannot proceed without choices
     }
     
@@ -313,7 +313,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
         const sessionRef = ref(database, `sessions/${currentSession.id}`);
         await update(sessionRef, { tournamentResults });
       } catch (error) {
-        console.error('Error updating tournament results:', error);
+        console.error('Error al actualizar los resultados del torneo:', error);
       }
     }
     
@@ -348,7 +348,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
       await finishGame();
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to exit game');
+      setError(err.message || 'Error al salir del juego');
     } finally {
       setLoading(false);
     }
@@ -366,22 +366,22 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "¡Los resultados finales están listos!" 
             : hasChosen 
-              ? "Waiting for your opponent..." 
-              : "Make your choice"}
+              ? "Esperando a tu oponente..." 
+              : "Haz tu elección"}
         </p>
       </div>
       
       {/* Current Round Overview (if game has history) */}
       {gameState.history && gameState.history.length > 0 && !isGameOver && (
         <div className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Last Round</h3>
+          <h3 className="text-lg font-medium mb-3">Ronda Anterior</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const isCurrentPlayer = player.id === currentPlayerId;
@@ -395,15 +395,15 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">{player.displayName}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600">
-                      {isCurrentPlayer ? 'You' : 'Opponent'}
+                      {isCurrentPlayer ? 'Tú' : 'Oponente'}
                     </span>
                   </div>
                   <div className="flex items-center mb-1">
                     <span className="text-2xl mr-2">{renderStrategyEmoji(playerStrategy)}</span>
-                    <span>{playerStrategy === 'straight' ? 'Went straight' : 'Swerved'}</span>
+                    <span>{playerStrategy === 'straight' ? 'Siguió recto' : 'Esquivó'}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Last round: +{playerScore} pts</span>
+                    <span>Última ronda: +{playerScore} pts</span>
                     <span className="font-bold">Total: {totalScore} pts</span>
                   </div>
                 </div>
@@ -428,8 +428,8 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">↪️</span>
-                <h4 className="font-bold mb-1">Swerve</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Cautious choice (avoid the crash)</p>
+                <h4 className="font-bold mb-1">Esquivar</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Elección cautelosa (evitar el choque)</p>
               </div>
             </button>
             
@@ -444,15 +444,15 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">🚗</span>
-                <h4 className="font-bold mb-1">Go Straight</h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Risky choice (but could pay off)</p>
+                <h4 className="font-bold mb-1">Seguir Recto</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Elección arriesgada (pero podría dar resultados)</p>
               </div>
             </button>
           </div>
           
           {hasChosen && (
             <p className="mt-4 text-gray-600 dark:text-gray-400">
-              You chose to {strategy === 'swerve' ? 'swerve' : 'go straight'}. Waiting for your opponent...
+              Elegiste {strategy === 'swerve' ? 'esquivar' : 'seguir recto'}. Esperando a tu oponente...
             </p>
           )}
         </div>
@@ -461,14 +461,14 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
       {/* Game Results */}
       {isGameOver && gameState.history && gameState.history.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Game Results</h3>
+          <h3 className="text-lg font-semibold mb-4">Resultados del Juego</h3>
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <div className="grid grid-cols-5 font-medium border-b dark:border-gray-700 pb-2 mb-2">
-              <div>Round</div>
-              <div>Your Choice</div>
-              <div>Opponent's Choice</div>
-              <div>Your Points</div>
-              <div>Opponent Points</div>
+              <div>Ronda</div>
+              <div>Tu Elección</div>
+              <div>Elección del Oponente</div>
+              <div>Tus Puntos</div>
+              <div>Puntos del Oponente</div>
             </div>
             {gameState.history.map((round, index) => {
               if (!currentPlayerId || !opponent) return null;
@@ -482,11 +482,11 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
                   <div>{round.round}</div>
                   <div className="flex items-center">
                     <span className="mr-1">{renderStrategyEmoji(yourStrategy)}</span> 
-                    {yourStrategy === 'straight' ? 'Straight' : 'Swerve'}
+                    {yourStrategy === 'straight' ? 'Recto' : 'Esquivar'}
                   </div>
                   <div className="flex items-center">
                     <span className="mr-1">{renderStrategyEmoji(opponentStrategy)}</span>
-                    {opponentStrategy === 'straight' ? 'Straight' : 'Swerve'}
+                    {opponentStrategy === 'straight' ? 'Recto' : 'Esquivar'}
                   </div>
                   <div>+{yourScore}</div>
                   <div>+{opponentScore}</div>
@@ -502,7 +502,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
                 
                 return (
                   <div key={player.id} className="text-center">
-                    <div className="font-medium mb-1">{player.displayName} {isCurrentPlayer ? '(You)' : ''}</div>
+                    <div className="font-medium mb-1">{player.displayName} {isCurrentPlayer ? '(Tú)' : ''}</div>
                     <div className="text-2xl font-bold">{playerData.totalScore} pts</div>
                   </div>
                 );
@@ -515,7 +515,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
       {/* Final Scores */}
       {isGameOver && (
         <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 p-6 rounded-lg mb-8">
-          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Final Scores</h3>
+          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Puntuaciones Finales</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const playerData = gameState.playerData[player.id];
@@ -539,12 +539,12 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
                     {player.displayName}
                     {isCurrentPlayer && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                        You
+                        Tú
                       </span>
                     )}
                     {isWinner && (
                       <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
-                        Winner
+                        Ganador
                       </span>
                     )}
                   </div>
@@ -565,7 +565,7 @@ const ChickenGame: React.FC<ChickenGameProps> = ({ onGameUpdate }) => {
             onClick={handleExitGame}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
           >
-            Return to Dashboard
+            Volver al Panel Principal
           </button>
         </div>
       )}

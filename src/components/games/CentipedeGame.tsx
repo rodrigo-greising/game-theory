@@ -38,8 +38,8 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere 2 jugadores</p>
       </div>
     );
   }
@@ -324,13 +324,13 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Centipede Game - Node ${gameState.currentNode + 1}`}
+            ? "Juego Terminado" 
+            : `Juego del Ciempiés - Nodo ${gameState.currentNode + 1}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
-            : `It's ${getActivePlayerName()}'s turn to decide`}
+            ? "Los resultados finales están listos" 
+            : `Es el turno de ${getActivePlayerName()} para decidir`}
         </p>
       </div>
       
@@ -380,10 +380,10 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
       {isInProgress && !isGameOver && (
         <div className="flex flex-col items-center mb-8">
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-6 w-full max-w-md">
-            <h4 className="font-medium mb-2 text-center">Current Node Payoffs</h4>
+            <h4 className="font-medium mb-2 text-center">Pagos del Nodo Actual</h4>
             <div className="flex justify-around">
               <div className="text-center">
-                <p className="text-sm">Your Payoff</p>
+                <p className="text-sm">Tu Pago</p>
                 <p className="text-2xl font-bold">
                   {currentPlayerId && getPlayerIndex(currentPlayerId) === 0 
                     ? currentPayoffs.player1 
@@ -391,7 +391,7 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm">Opponent's Payoff</p>
+                <p className="text-sm">Pago del Oponente</p>
                 <p className="text-2xl font-bold">
                   {currentPlayerId && getPlayerIndex(currentPlayerId) === 0 
                     ? currentPayoffs.player2 
@@ -412,8 +412,8 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
               >
                 <div className="text-center">
                   <div className="text-5xl mb-4">➡️</div>
-                  <h4 className="font-bold text-lg mb-1">Continue</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Pass to next player</p>
+                  <h4 className="font-bold text-lg mb-1">Continuar</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Pasar al siguiente jugador</p>
                 </div>
               </button>
               
@@ -426,15 +426,15 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
               >
                 <div className="text-center">
                   <div className="text-5xl mb-4">🛑</div>
-                  <h4 className="font-bold text-lg mb-1">Stop</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">End the game here</p>
+                  <h4 className="font-bold text-lg mb-1">Detener</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Terminar el juego aquí</p>
                 </div>
               </button>
             </div>
           ) : (
             <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
-              <p className="text-lg mb-2">Waiting for {getActivePlayerName()} to make a decision...</p>
-              <p className="text-sm text-gray-500">They will decide whether to continue or stop the game.</p>
+              <p className="text-lg mb-2">Esperando a que {getActivePlayerName()} tome una decisión...</p>
+              <p className="text-sm text-gray-500">Decidirán si continuar o detener el juego.</p>
             </div>
           )}
         </div>
@@ -443,17 +443,17 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
       {/* Game Results */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-left">Node Reached</th>
-                  <th className="py-2 text-left">Stopped By</th>
-                  <th className="py-2 text-right">Your Score</th>
-                  <th className="py-2 text-right">Opponent Score</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-left">Nodo Alcanzado</th>
+                  <th className="py-2 text-left">Detenido Por</th>
+                  <th className="py-2 text-right">Tu Puntuación</th>
+                  <th className="py-2 text-right">Puntuación del Oponente</th>
                 </tr>
               </thead>
               <tbody>
@@ -465,8 +465,8 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
                   
                   // Determine who stopped the game
                   const stoppedBy = round.stoppedById ? 
-                    (round.stoppedById === currentPlayerId ? 'You' : opponent?.displayName || 'Opponent') : 
-                    'Final Node';
+                    (round.stoppedById === currentPlayerId ? 'Tú' : opponent?.displayName || 'Oponente') : 
+                    'Nodo Final';
                   
                   return (
                     <tr key={index} className="border-b border-gray-200 dark:border-gray-700">
@@ -486,7 +486,7 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
               {isGameOver && gameState.playerData && (
                 <tfoot>
                   <tr className="font-bold">
-                    <td colSpan={3} className="py-2 text-right">Final Score:</td>
+                    <td colSpan={3} className="py-2 text-right">Puntuación Final:</td>
                     <td className="py-2 text-right">
                       {currentPlayerId && gameState.playerData && 
                        gameState.playerData[currentPlayerId]?.totalScore}
@@ -504,10 +504,10 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
           {/* Game Over summary */}
           {isGameOver && (
             <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
-              <h2 className="text-2xl font-bold mb-4">Game Complete!</h2>
+              <h2 className="text-2xl font-bold mb-4">¡Juego Completado!</h2>
               <div className="flex justify-center items-center gap-8">
                 <div className="flex flex-col items-center">
-                  <p className="text-lg font-medium">Your Score</p>
+                  <p className="text-lg font-medium">Tu Puntuación</p>
                   <p className="text-4xl font-bold mt-2">
                     {currentPlayerId && gameState.playerData && 
                      gameState.playerData[currentPlayerId]?.totalScore}
@@ -515,7 +515,7 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
                 </div>
                 <div className="text-2xl font-bold">vs</div>
                 <div className="flex flex-col items-center">
-                  <p className="text-lg font-medium">{opponent?.displayName || 'Opponent'}'s Score</p>
+                  <p className="text-lg font-medium">Puntuación de {opponent?.displayName || 'Oponente'}</p>
                   <p className="text-4xl font-bold mt-2">
                     {opponent && opponent.id && gameState.playerData && 
                      gameState.playerData[opponent.id]?.totalScore}
@@ -527,7 +527,7 @@ const CentipedeGame: React.FC<CentipedeGameProps> = ({ onGameUpdate }) => {
                   onClick={handleExitGame}
                   className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
                 >
-                  Return to Dashboard
+                  Volver al Panel
                 </button>
               </div>
             </div>

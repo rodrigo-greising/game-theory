@@ -31,22 +31,35 @@ export const SCORING = {
 // Implementation of the Prisoner's Dilemma game (follows Liskov Substitution Principle)
 const PrisonersDilemma: Game = {
   id: 'prisoners-dilemma',
-  name: 'Prisoner\'s Dilemma',
-  description: 'A classic game theory scenario where two players must decide whether to cooperate or defect, with rewards based on the combination of their choices.',
+  name: 'Dilema del Prisionero',
+  description: 'Un escenario clásico de teoría de juegos donde dos jugadores deben decidir si cooperar o delatar, con recompensas basadas en la combinación de sus elecciones.',
   minPlayers: 2,
   maxPlayers: 2, // Classic version is for exactly 2 players
   rules: `
-    In the Prisoner's Dilemma, you and another player are suspects in a crime.
+    En el Dilema del Prisionero, tú y otro jugador son sospechosos de un crimen.
     
-    Each round, you must choose to either cooperate (remain silent) or defect (betray the other player).
+    En cada ronda, debes elegir entre cooperar (permanecer en silencio) o delatar (traicionar al otro jugador).
     
-    The payoffs are:
-    - If both cooperate: Both get ${SCORING.BOTH_COOPERATE} points
-    - If both defect: Both get ${SCORING.BOTH_DEFECT} points
-    - If you cooperate but they defect: You get ${SCORING.COOPERATE_WHEN_OTHER_DEFECTS} points, they get ${SCORING.DEFECT_WHEN_OTHER_COOPERATES} points
-    - If you defect but they cooperate: You get ${SCORING.DEFECT_WHEN_OTHER_COOPERATES} points, they get ${SCORING.COOPERATE_WHEN_OTHER_DEFECTS} points
+    Las recompensas son:
+    - Si ambos cooperan: Ambos reciben ${SCORING.BOTH_COOPERATE} puntos
+    - Si ambos delatan: Ambos reciben ${SCORING.BOTH_DEFECT} puntos
+    - Si tú cooperas pero el otro delata: Tú recibes ${SCORING.COOPERATE_WHEN_OTHER_DEFECTS} puntos, el otro recibe ${SCORING.DEFECT_WHEN_OTHER_COOPERATES} puntos
+    - Si tú delatas pero el otro coopera: Tú recibes ${SCORING.DEFECT_WHEN_OTHER_COOPERATES} puntos, el otro recibe ${SCORING.COOPERATE_WHEN_OTHER_DEFECTS} puntos
     
-    The game consists of multiple rounds. The player with the highest total score at the end wins.
+    El juego consiste en múltiples rondas. El jugador con la puntuación total más alta al final gana.
+  `,
+  educationalContent: `
+    <h3>Orígenes e Historia del Dilema del Prisionero</h3>
+    
+    <p>El Dilema del Prisionero fue formalmente presentado por Merrill Flood y Melvin Dresher en 1950 mientras trabajaban en RAND Corporation. Más tarde, Albert W. Tucker formalizó el juego con la terminología de penas de prisión y le dio el nombre por el que se conoce hoy.</p>
+    
+    <p>Este juego es fundamental en la teoría de juegos por ilustrar por qué dos personas racionales podrían no cooperar incluso cuando claramente beneficiaría a ambas hacerlo. Representa una situación donde la estrategia individual que parece más segura conduce a un resultado colectivamente peor.</p>
+    
+    <p>El Dilema del Prisionero ha sido estudiado extensivamente en muchas disciplinas, incluyendo economía, ciencias políticas, ética, psicología y biología evolutiva, pues modela comportamientos clave relacionados con la cooperación humana.</p>
+    
+    <p>Una variante influyente es el Dilema del Prisionero Iterado, donde los participantes juegan múltiples rondas con el mismo oponente, lo que permite estrategias más complejas como "tit-for-tat" (tal para cual), que resultó sorprendentemente efectiva en torneos computarizados organizados por Robert Axelrod en los años 80.</p>
+    
+    <p>El dilema ilustra tensiones entre la racionalidad individual y grupal, y ayuda a explicar comportamientos en situaciones tan diversas como acuerdos de desarme nuclear, cambio climático, publicidad competitiva y muchas interacciones sociales cotidianas.</p>
   `,
   validatePlayerCount: (playerCount: number): boolean => {
     return playerCount === 2; // Exactly 2 players required for this game

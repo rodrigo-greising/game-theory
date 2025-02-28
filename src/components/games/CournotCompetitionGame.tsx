@@ -22,7 +22,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Game state not available.</p>
+        <p className="text-red-500">Estado del juego no disponible.</p>
       </div>
     );
   }
@@ -64,8 +64,8 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
           
           await updateGameState(updatedGameState);
         } catch (err: any) {
-          console.error('Error initializing player data:', err);
-          setError(err.message || 'Failed to initialize game data');
+          console.error('Error al inicializar los datos del juego:', err);
+          setError(err.message || 'Error al inicializar los datos del juego');
         } finally {
           setLoading(false);
         }
@@ -79,8 +79,8 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires at least 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere al menos 2 jugadores</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
   if (!gameState.playerData) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Initializing game data...</p>
+        <p className="text-yellow-500">Inicializando datos del juego...</p>
         <div className="mt-4 flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -138,7 +138,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
             onGameUpdate(updatedGameState);
           }
         } catch (err: any) {
-          setError(err.message || 'Failed to start game');
+          setError(err.message || 'Error al iniciar el juego');
         } finally {
           setLoading(false);
         }
@@ -200,7 +200,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
         await updateGameState(updatedGameState);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to submit quantity');
+      setError(err.message || 'Error al enviar la cantidad');
     } finally {
       setLoading(false);
     }
@@ -210,7 +210,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
   const evaluateRound = async (currentState: CournotCompetitionState) => {
     const playerIds = Object.keys(currentSession.players || {});
     if (!playerIds || playerIds.length < 2) {
-      console.error("Cournot Competition requires at least 2 players");
+      console.error("La Competencia de Cournot requiere al menos 2 jugadores");
       return; // Requires at least 2 players
     }
     
@@ -230,7 +230,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
     
     // Safety check to make sure all quantities are defined
     if (!allQuantitiesValid) {
-      console.error('Cannot evaluate round: one or more players have not set a quantity');
+      console.error('No se puede evaluar la ronda: uno o más jugadores no han establecido una cantidad');
       return; // Cannot proceed without all quantities
     }
     
@@ -361,7 +361,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
         const sessionRef = ref(database, `sessions/${currentSession.id}`);
         await update(sessionRef, { tournamentResults });
       } catch (error) {
-        console.error('Error updating tournament results:', error);
+        console.error('Error al actualizar los resultados del torneo:', error);
       }
     }
     
@@ -389,7 +389,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
       await finishGame();
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to exit game');
+      setError(err.message || 'Error al salir del juego');
     } finally {
       setLoading(false);
     }
@@ -407,15 +407,15 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "¡Los resultados finales están listos!" 
             : hasSubmitted 
-              ? "Waiting for other players..." 
-              : "Set your production quantity"}
+              ? "Esperando a otros jugadores..." 
+              : "Establece tu cantidad de producción"}
         </p>
       </div>
       
@@ -423,11 +423,11 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
       {isInProgress && !isGameOver && (
         <div className="flex flex-col items-center mb-8">
           <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
-            <h4 className="font-bold text-lg mb-4 text-center">Your Production Quantity</h4>
+            <h4 className="font-bold text-lg mb-4 text-center">Tu Cantidad de Producción</h4>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center">
-              Choose your production quantity between {gameState.minQuantity} and {gameState.maxQuantity} units.
-              Remember, the market price is determined by the total quantity produced by all firms.
-              The price will be: ${gameState.demandIntercept} - (Total Quantity)
+              Elige tu cantidad de producción entre {gameState.minQuantity} y {gameState.maxQuantity} unidades.
+              Recuerda, el precio de mercado está determinado por la cantidad total producida por todas las empresas.
+              El precio será: ${gameState.demandIntercept} - (Cantidad Total)
             </p>
             
             <div className="mb-6">
@@ -445,7 +445,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
               />
               <div className="mt-2 text-center">
-                <span className="text-2xl font-bold">{quantity} units</span>
+                <span className="text-2xl font-bold">{quantity} unidades</span>
               </div>
             </div>
             
@@ -458,19 +458,19 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
                   : 'bg-blue-500 hover:bg-blue-600'
                 }`}
             >
-              {loading ? 'Submitting...' : hasSubmitted ? 'Quantity Submitted' : 'Submit Quantity'}
+              {loading ? 'Enviando...' : hasSubmitted ? 'Cantidad Enviada' : 'Enviar Cantidad'}
             </button>
           </div>
           
           {hasSubmitted && gameState.playerData && currentPlayerId && gameState.playerData[currentPlayerId] && (
             <div className="mt-6 text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p>You've set a quantity of <strong>{gameState.playerData[currentPlayerId]?.currentQuantity} units</strong></p>
+              <p>Has establecido una cantidad de <strong>{gameState.playerData[currentPlayerId]?.currentQuantity} unidades</strong></p>
               <p className="text-sm text-gray-500 mt-1">
-                Waiting for {Object.values(currentSession.players || {}).filter(p => 
+                Esperando a que {Object.values(currentSession.players || {}).filter(p => 
                   p.id !== currentPlayerId && 
                   (!gameState.playerData[p.id] || 
                    !gameState.playerData[p.id].ready)
-                ).map(p => p.displayName).join(', ')} to set quantities...
+                ).map(p => p.displayName).join(', ')} establezcan sus cantidades...
               </p>
             </div>
           )}
@@ -480,17 +480,17 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
       {/* Game Results */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-right">Your Quantity</th>
-                  <th className="py-2 text-right">Total Quantity</th>
-                  <th className="py-2 text-right">Market Price</th>
-                  <th className="py-2 text-right">Your Profit</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-right">Tu Cantidad</th>
+                  <th className="py-2 text-right">Cantidad Total</th>
+                  <th className="py-2 text-right">Precio de Mercado</th>
+                  <th className="py-2 text-right">Tu Beneficio</th>
                 </tr>
               </thead>
               <tbody>
@@ -516,19 +516,19 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
       {/* Current Round Results (after evaluation) */}
       {gameState.history && gameState.history.length > 0 && !isGameOver && (
         <div className="mt-6">
-          <h3 className="font-semibold text-lg mb-3">Round {gameState.round - 1} Results</h3>
+          <h3 className="font-semibold text-lg mb-3">Resultados Ronda {gameState.round - 1}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Market Overview</h4>
+              <h4 className="font-medium mb-2">Resumen del Mercado</h4>
               <dl>
                 <div className="grid grid-cols-2 py-1">
-                  <dt>Total Quantity:</dt>
+                  <dt>Cantidad Total:</dt>
                   <dd className="text-right font-medium">
-                    {gameState.history[gameState.history.length - 1].totalQuantity} units
+                    {gameState.history[gameState.history.length - 1].totalQuantity} unidades
                   </dd>
                 </div>
                 <div className="grid grid-cols-2 py-1">
-                  <dt>Market Price:</dt>
+                  <dt>Precio de Mercado:</dt>
                   <dd className="text-right font-medium">
                     ${gameState.history[gameState.history.length - 1].marketPrice.toFixed(2)}
                   </dd>
@@ -537,7 +537,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
             </div>
             
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Player Quantities</h4>
+              <h4 className="font-medium mb-2">Cantidades de los Jugadores</h4>
               <ul className="space-y-2">
                 {Object.entries(gameState.history[gameState.history.length - 1].quantities).map(([playerId, qty]) => {
                   const player = players.find(p => p.id === playerId);
@@ -546,9 +546,9 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
                   return (
                     <li key={playerId} className="flex justify-between items-center">
                       <span className={isCurrentPlayer ? 'font-medium' : ''}>
-                        {player?.displayName} {isCurrentPlayer ? '(You)' : ''}:
+                        {player?.displayName} {isCurrentPlayer ? '(Tú)' : ''}:
                       </span>
-                      <span className="font-medium">{qty} units</span>
+                      <span className="font-medium">{qty} unidades</span>
                     </li>
                   );
                 })}
@@ -561,7 +561,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
       {/* Final Scores */}
       {isGameOver && (
         <div className="mt-6">
-          <h3 className="font-semibold text-xl mb-4">Final Scores</h3>
+          <h3 className="font-semibold text-xl mb-4">Puntuaciones Finales</h3>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
             <div className="grid gap-4">
               {players.map(player => {
@@ -585,11 +585,11 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
                     <div className="flex justify-between items-center">
                       <div>
                         <span className={`font-medium ${isCurrentPlayer ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                          {player.displayName} {isCurrentPlayer ? '(You)' : ''}
+                          {player.displayName} {isCurrentPlayer ? '(Tú)' : ''}
                         </span>
                         {isWinner && (
                           <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
-                            Winner
+                            Ganador
                           </span>
                         )}
                       </div>
@@ -605,7 +605,7 @@ const CournotCompetitionGame: React.FC<CournotCompetitionGameProps> = ({ onGameU
                 onClick={handleExitGame}
                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
               >
-                Return to Dashboard
+                Volver al Panel Principal
               </button>
             </div>
           </div>

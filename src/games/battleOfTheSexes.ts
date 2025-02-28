@@ -32,23 +32,36 @@ export const SCORING = {
 // Implementation of the Event Coordination Dilemma game
 const BattleOfTheSexes: Game = {
   id: 'battle-of-the-sexes',
-  name: 'Event Coordination Dilemma',
-  description: 'A coordination game where two players prefer different events but both would rather attend the same event than go to separate ones.',
+  name: 'Dilema de Coordinación de Eventos',
+  description: 'Un juego de coordinación donde dos jugadores prefieren eventos diferentes pero ambos preferirían asistir al mismo evento que ir a eventos separados.',
   minPlayers: 2,
   maxPlayers: 2, // Classic version is for exactly 2 players
   rules: `
-    In the Event Coordination Dilemma, you and another player are deciding which event to attend: Opera or Football.
+    En el Dilema de Coordinación de Eventos, tú y otro jugador están decidiendo a qué evento asistir: Ópera o Fútbol.
     
-    One player prefers Opera, the other prefers Football, but both would rather attend the same event together than go to different events.
+    Un jugador prefiere la Ópera, el otro prefiere el Fútbol, pero ambos preferirían asistir al mismo evento juntos que ir a eventos diferentes.
     
-    Each round, you must choose which event to attend.
+    En cada ronda, debes elegir a qué evento asistir.
     
-    The payoffs are:
-    - If both choose Opera: Opera fan gets 3 points, Football fan gets 2 points
-    - If both choose Football: Opera fan gets 2 points, Football fan gets 3 points
-    - If you choose different events: Both get 0 points (worst outcome)
+    Las recompensas son:
+    - Si ambos eligen Ópera: El aficionado a la Ópera obtiene 3 puntos, el aficionado al Fútbol obtiene 2 puntos
+    - Si ambos eligen Fútbol: El aficionado a la Ópera obtiene 2 puntos, el aficionado al Fútbol obtiene 3 puntos
+    - Si eligen eventos diferentes: Ambos obtienen 0 puntos (peor resultado)
     
-    The game consists of multiple rounds. The player with the highest total score at the end wins.
+    El juego consiste en múltiples rondas. El jugador con la puntuación total más alta al final gana.
+  `,
+  educationalContent: `
+    <h3>Orígenes e Historia del Dilema de Coordinación de Eventos</h3>
+    
+    <p>El Dilema de Coordinación de Eventos, conocido originalmente como "Battle of the Sexes" (Batalla de los Sexos), fue introducido en la teoría de juegos en la década de 1950. El nombre original reflejaba un estereotipo de la época donde se asumía que un hombre preferiría ver un evento deportivo mientras que una mujer preferiría asistir a un evento cultural, aunque ambos preferirían estar juntos que separados.</p>
+    
+    <p>A diferencia del Dilema del Prisionero, donde hay un conflicto directo de intereses, este juego presenta un problema de coordinación con preferencias parcialmente alineadas. Hay dos equilibrios de Nash (donde ambos eligen la ópera o ambos eligen el fútbol), pero los jugadores difieren en cuál preferirían.</p>
+    
+    <p>Este juego ha sido estudiado extensamente por su relevancia para entender problemas de coordinación social y negociación donde hay intereses parcialmente compatibles. Modeliza situaciones donde la coordinación es mutuamente beneficiosa, pero existe desacuerdo sobre qué equilibrio es preferible.</p>
+    
+    <p>Las aplicaciones incluyen decisiones de pareja sobre actividades compartidas, negociaciones comerciales donde diferentes partes prefieren diferentes estándares técnicos pero todos se benefician de un estándar común, y situaciones diplomáticas donde los países se benefician de la coordinación pero tienen diferentes preferencias sobre qué política adoptar.</p>
+    
+    <p>Investigaciones posteriores han explorado variantes de este juego con comunicación previa, rondas repetidas, o más de dos jugadores, revelando dinámicas fascinantes sobre cómo las personas resuelven dilemas de coordinación cuando hay preferencias divergentes pero intereses fundamentalmente compatibles.</p>
   `,
   validatePlayerCount: (playerCount: number): boolean => {
     // For Event Coordination Dilemma, we require exactly 2 players

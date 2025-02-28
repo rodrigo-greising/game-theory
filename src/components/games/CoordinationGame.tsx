@@ -22,7 +22,7 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Game state not available.</p>
+        <p className="text-red-500">Estado del juego no disponible.</p>
       </div>
     );
   }
@@ -65,7 +65,7 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
           
           await updateGameState(updatedGameState);
         } catch (err: any) {
-          setError(err.message || 'Failed to start game');
+          setError(err.message || 'Error al iniciar el juego');
         } finally {
           setLoading(false);
         }
@@ -80,9 +80,9 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
     return (
       <div className="flex flex-col items-center text-center p-6">
         <div className="animate-pulse mb-4">
-          <span className="text-5xl">🅰️ 🅱️</span>
+          <span className="text-5xl">🎯 🎯</span>
         </div>
-        <h3 className="text-xl font-semibold mb-4">Loading Game...</h3>
+        <h3 className="text-xl font-semibold mb-4">Cargando Juego...</h3>
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
@@ -92,18 +92,16 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires at least 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere al menos 2 jugadores</p>
       </div>
     );
   }
   
   // Check if player has already made a choice this round
-  const hasChosen = currentPlayerId && 
-    gameState.playerData && 
+  const hasChosen = currentPlayerId && gameState.playerData && 
     gameState.playerData[currentPlayerId] && 
-    gameState.playerData[currentPlayerId]?.currentChoice !== null &&
-    gameState.playerData[currentPlayerId]?.currentChoice !== undefined;
+    gameState.playerData[currentPlayerId]?.currentChoice;
   
   // Function to make a choice
   const makeChoice = async (selectedChoice: Choice) => {
@@ -122,7 +120,7 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
       // Create updated player data
       const updatedPlayerData: Record<string, {
         totalScore: number;
-        currentChoice?: Choice | null;
+        currentChoice?: Choice;
         ready: boolean;
       }> = {
         ...gameState.playerData,
@@ -157,7 +155,7 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
       
       setChoice(selectedChoice);
     } catch (err: any) {
-      setError(err.message || 'Failed to submit choice');
+      setError(err.message || 'Error al realizar la elección');
     } finally {
       setLoading(false);
     }
@@ -168,49 +166,79 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
     const playerIds = Object.keys(currentSession.players || {});
     if (!playerIds || playerIds.length < 2) {
       console.error("Coordination Game requires at least 2 players");
+      return; // Requires at least 2 players
+    }
+    
+    // Gather all player choices
+    const playerChoices: Record<string, Choice> = {};
+    let allChoicesValid = true;
+    
+    playerIds.forEach(playerId => {
+      const choice = currentState.playerData[playerId]?.currentChoice;
+      playerChoices[playerId] = choice as Choice;
+      
+      // Check if any choices are undefined
+      if (choice === undefined) {
+        allChoicesValid = false;
+      }
+    });
+    
+    // Make sure all players have made valid choices
+    if (!allChoicesValid) {
+      console.error('Cannot evaluate round: one or more players have not made a choice');
       return;
     }
     
-    // Get all player choices
-    const playerChoices: Array<{ playerId: string, choice: Choice }> = [];
-    
-    for (const playerId of playerIds) {
-      const choice = currentState.playerData[playerId]?.currentChoice;
-      if (!choice) {
-        console.error('Cannot evaluate round: one or more players have not made a choice');
-        return; // Cannot proceed without all choices
-      }
-      
-      playerChoices.push({ playerId, choice });
-    }
-    
-    // Check if all players chose the same option
-    const firstChoice = playerChoices[0].choice;
-    const allSameChoice = playerChoices.every(pc => pc.choice === firstChoice);
-    
-    // Calculate the scores for this round
+    // Calculate scores based on choices
     const scores: Record<string, number> = {};
     
+    // Check the distribution of choices
+    const choiceA = currentState.optionA;
+    const choiceB = currentState.optionB;
+    let countChoiceA = 0;
+    let countChoiceB = 0;
+    
     playerIds.forEach(playerId => {
-      // If all players chose the same option, everyone gets the coordination score
-      // Otherwise, everyone gets the fail score
-      scores[playerId] = allSameChoice ? SCORING.COORDINATE : SCORING.FAIL;
+      if (playerChoices[playerId] === choiceA) {
+        countChoiceA++;
+      } else if (playerChoices[playerId] === choiceB) {
+        countChoiceB++;
+      }
     });
     
-    // Create the round result
+    // Calculate scores for each player based on their choices compared to the majority
+    playerIds.forEach(playerId => {
+      const playerChoice = playerChoices[playerId];
+      
+      // Different scoring scenarios based on coordination
+      if (countChoiceA === countChoiceB) {
+        // Perfectly split - lower rewards for everyone
+        scores[playerId] = SCORING.SPLIT;
+      } else if (
+        (playerChoice === choiceA && countChoiceA > countChoiceB) ||
+        (playerChoice === choiceB && countChoiceB > countChoiceA)
+      ) {
+        // Player chose the majority choice - higher reward
+        scores[playerId] = SCORING.MAJORITY;
+      } else {
+        // Player chose the minority choice - lower reward
+        scores[playerId] = SCORING.MINORITY;
+      }
+    });
+    
+    // Update scores and history
     const roundResult = {
       round: currentState.round,
-      choices: playerChoices.reduce((acc, pc) => {
-        acc[pc.playerId] = pc.choice;
-        return acc;
-      }, {} as Record<string, Choice>),
-      scores
+      choices: playerChoices,
+      scores: scores,
+      choiceACounts: countChoiceA,
+      choiceBCounts: countChoiceB
     };
     
     // Update player data with new scores and reset for next round
     const updatedPlayerData: Record<string, {
       totalScore: number;
-      currentChoice: null;
+      currentChoice: Choice | null;
       ready: boolean;
     }> = {};
     
@@ -233,7 +261,7 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
     };
     
     // For tournament mode, update the tournament results in the session
-    if (currentSession.isTournament) {
+    if (currentSession.isTournament && isLastRound) {
       try {
         // Create updated tournament results
         const tournamentResults = currentSession.tournamentResults ? { ...currentSession.tournamentResults } : {};
@@ -253,75 +281,68 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
             };
           }
           
-          // Update tournament scores
-          tournamentResults[playerId].totalScore += scores[playerId];
+          // For coordination game, maybe count choosing the majority as cooperation
+          const choiceHistory = Array.isArray(currentState.history) 
+            ? currentState.history.map(round => {
+                const choice = round.choices[playerId];
+                const choiceACount = round.choiceACounts;
+                const choiceBCount = round.choiceBCounts;
+                const isMajorityChoice = 
+                  (choice === choiceA && choiceACount > choiceBCount) || 
+                  (choice === choiceB && choiceBCount > choiceACount);
+                return isMajorityChoice;
+              })
+            : [];
           
-          // For coordination game:
-          // - Count choosing the most popular option as "cooperation"
-          // - Count choosing the less popular option as "defection"
-          const playerChoice = currentState.playerData[playerId]?.currentChoice;
+          // Add current round
+          const currentChoice = playerChoices[playerId];
+          const isMajorityChoice = 
+            (currentChoice === choiceA && countChoiceA > countChoiceB) || 
+            (currentChoice === choiceB && countChoiceB > countChoiceA);
+          choiceHistory.push(isMajorityChoice);
           
-          if (playerChoice) {
-            // Count choices for each option
-            const optionCounts = playerChoices.reduce((counts, pc) => {
-              counts[pc.choice] = (counts[pc.choice] || 0) + 1;
-              return counts;
-            }, {} as Record<Choice, number>);
-            
-            // Find the most popular choice
-            const mostPopularChoice = Object.entries(optionCounts)
-              .sort(([, countA], [, countB]) => countB - countA)[0][0] as Choice;
-            
-            if (playerChoice === mostPopularChoice) {
-              tournamentResults[playerId].cooperateCount += 1;
-            } else {
-              tournamentResults[playerId].defectCount += 1;
-            }
-          }
+          // Calculate cooperation as the percentage of majority choices
+          const cooperationRate = choiceHistory.filter(Boolean).length / choiceHistory.length;
+          
+          // Consider majority choices as cooperation (arbitrary threshold)
+          tournamentResults[playerId].cooperateCount += cooperationRate >= 0.5 ? 1 : 0;
+          tournamentResults[playerId].defectCount += cooperationRate < 0.5 ? 1 : 0;
+          
+          // Update player's tournament score
+          tournamentResults[playerId].totalScore += updatedPlayerData[playerId].totalScore;
+          
+          // Increment matches played
+          tournamentResults[playerId].matchesPlayed += 1;
         });
         
-        // If game is completed, update matches played and win/loss/draw counts
-        if (isLastRound) {
-          // Find the highest and lowest scores
-          const playerScores = playerIds.map(playerId => ({
-            playerId,
-            score: updatedPlayerData[playerId].totalScore
-          }));
+        // Determine winners and losers based on final scores
+        const playerScores = playerIds.map(id => ({
+          id,
+          score: updatedPlayerData[id].totalScore
+        }));
+        
+        // Sort by score (highest first)
+        playerScores.sort((a, b) => b.score - a.score);
+        
+        // Find highest and lowest scores
+        const highestScore = playerScores[0].score;
+        const lowestScore = playerScores[playerScores.length - 1].score;
+        
+        // Update win/loss/draw records
+        playerIds.forEach(playerId => {
+          const playerScore = updatedPlayerData[playerId].totalScore;
           
-          const highestScore = Math.max(...playerScores.map(p => p.score));
-          
-          // In coordination games, either everyone wins or no one does
-          if (highestScore > 0) {
-            // Check if there are multiple winners (tied for highest score)
-            const winners = playerScores.filter(p => p.score === highestScore);
-            
-            playerIds.forEach(playerId => {
-              // Increment matches played
-              tournamentResults[playerId].matchesPlayed += 1;
-              
-              const playerScore = updatedPlayerData[playerId].totalScore;
-              
-              if (playerScore === highestScore) {
-                if (winners.length === playerIds.length) {
-                  // Everyone tied - it's a draw
-                  tournamentResults[playerId].draws += 1;
-                } else {
-                  // This player is a winner
-                  tournamentResults[playerId].wins += 1;
-                }
-              } else {
-                // This player scored lower than the winners
-                tournamentResults[playerId].losses += 1;
-              }
-            });
+          if (playerScore === highestScore && playerScore > lowestScore) {
+            // Player has highest score (may be tied with others)
+            tournamentResults[playerId].wins += 1;
+          } else if (playerScore === lowestScore && playerScore < highestScore) {
+            // Player has lowest score (may be tied with others)
+            tournamentResults[playerId].losses += 1;
           } else {
-            // Everyone scored 0 - it's a draw for everyone
-            playerIds.forEach(playerId => {
-              tournamentResults[playerId].matchesPlayed += 1;
-              tournamentResults[playerId].draws += 1;
-            });
+            // Player is in the middle or tied for both highest and lowest (everyone has same score)
+            tournamentResults[playerId].draws += 1;
           }
-        }
+        });
         
         // Update the tournament results in the database
         const sessionRef = ref(database, `sessions/${currentSession.id}`);
@@ -347,34 +368,10 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
       await finishGame();
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to exit game');
+      setError(err.message || 'Error al salir del juego');
     } finally {
       setLoading(false);
     }
-  };
-  
-  // Function to get the count of each choice in the current round
-  const getCurrentRoundChoiceCounts = () => {
-    if (!gameState.playerData) return { A: 0, B: 0 };
-    
-    const counts = { A: 0, B: 0 };
-    
-    Object.values(gameState.playerData).forEach(playerData => {
-      if (playerData.currentChoice === 'A') {
-        counts.A += 1;
-      } else if (playerData.currentChoice === 'B') {
-        counts.B += 1;
-      }
-    });
-    
-    return counts;
-  };
-  
-  // Function to render the emoji for a choice
-  const renderChoiceEmoji = (playerChoice: Choice | null | undefined) => {
-    if (playerChoice === 'A') return '🅰️';
-    if (playerChoice === 'B') return '🅱️';
-    return '❓';
   };
   
   return (
@@ -389,185 +386,153 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : hasChosen 
-              ? "Waiting for other players..." 
-              : "Make your choice"}
+              ? "Esperando a otros jugadores..." 
+              : "Elige una opción"}
         </p>
       </div>
-      
-      {/* Current Round Overview (if game has history) */}
-      {gameState.history && gameState.history.length > 0 && !isGameOver && (
-        <div className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Previous Round Summary</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
-              <h4 className="font-medium mb-2">Results</h4>
-              {(() => {
-                const lastRound = gameState.history[gameState.history.length - 1];
-                const choices = Object.values(lastRound.choices);
-                const allSame = choices.every(c => c === choices[0]);
-                
-                return (
-                  <div>
-                    <p className="mb-2">
-                      {allSame
-                        ? `Everyone chose ${choices[0]} - Coordination successful! ✅`
-                        : "Players chose different options - Coordination failed! ❌"}
-                    </p>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-2">🅰️</span>
-                        <span className="font-medium">{choices.filter(c => c === 'A').length} players</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-2">🅱️</span>
-                        <span className="font-medium">{choices.filter(c => c === 'B').length} players</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-            
-            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
-              <h4 className="font-medium mb-2">Your Score</h4>
-              {currentPlayerId && (
-                <div>
-                  <p className="mb-2">
-                    This round: {gameState.history[gameState.history.length - 1].scores[currentPlayerId]} points
-                  </p>
-                  <p className="font-bold">
-                    Total score: {gameState.playerData[currentPlayerId]?.totalScore} points
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* Game Board - Choice Buttons */}
       {isInProgress && !isGameOver && (
         <div className="flex flex-col items-center mb-8">
-          <div className="mb-4 text-center">
-            <p className="text-lg">Choose either Option A or Option B</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              You'll get {SCORING.COORDINATE} points if everyone chooses the same option, 
-              and {SCORING.FAIL} points if there are any disagreements.
+          <div className="mb-4 text-center max-w-md">
+            <p className="text-gray-600 dark:text-gray-300 mb-2">
+              El objetivo de este juego es coordinarse para elegir la misma opción que la mayoría. 
+              ¡Mayor coordinación significa mayores puntuaciones!
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              La mayoría consigue {SCORING.MAJORITY} puntos, la minoría consigue {SCORING.MINORITY} puntos. 
+              Si hay empate, todos reciben {SCORING.SPLIT} puntos.
             </p>
           </div>
           
-          <div className="grid grid-cols-2 gap-6 w-full max-w-md">
+          <div className="grid grid-cols-2 gap-6 w-full max-w-md mb-6">
             <button
-              onClick={() => makeChoice('A')}
+              onClick={() => makeChoice(gameState.optionA)}
               disabled={loading || hasChosen}
               className={`p-6 rounded-lg border-2 transition-all ${
-                hasChosen && choice === 'A'
+                hasChosen && choice === gameState.optionA
                   ? 'bg-blue-100 border-blue-500 dark:bg-blue-900 dark:border-blue-400'
                   : 'border-gray-300 hover:border-blue-500 dark:border-gray-600 dark:hover:border-blue-400'
               }`}
             >
               <div className="flex flex-col items-center">
-                <span className="text-4xl mb-2">🅰️</span>
-                <h4 className="font-bold mb-1">Option A</h4>
+                <span className="text-4xl mb-3">🅰️</span>
+                <h4 className="font-bold">{gameState.optionA}</h4>
               </div>
             </button>
             
             <button
-              onClick={() => makeChoice('B')}
+              onClick={() => makeChoice(gameState.optionB)}
               disabled={loading || hasChosen}
               className={`p-6 rounded-lg border-2 transition-all ${
-                hasChosen && choice === 'B'
-                  ? 'bg-purple-100 border-purple-500 dark:bg-purple-900 dark:border-purple-400'
-                  : 'border-gray-300 hover:border-purple-500 dark:border-gray-600 dark:hover:border-purple-400'
+                hasChosen && choice === gameState.optionB
+                  ? 'bg-green-100 border-green-500 dark:bg-green-900 dark:border-green-400'
+                  : 'border-gray-300 hover:border-green-500 dark:border-gray-600 dark:hover:border-green-400'
               }`}
             >
               <div className="flex flex-col items-center">
-                <span className="text-4xl mb-2">🅱️</span>
-                <h4 className="font-bold mb-1">Option B</h4>
+                <span className="text-4xl mb-3">🅱️</span>
+                <h4 className="font-bold">{gameState.optionB}</h4>
               </div>
             </button>
           </div>
           
           {hasChosen && (
-            <div className="mt-6 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-              <p className="text-center mb-2">
-                You chose Option {choice} {renderChoiceEmoji(choice)}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                Waiting for the other players to make their choices...
-              </p>
-              <div className="mt-3">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                  <div 
-                    className="bg-blue-600 h-2.5 rounded-full" 
-                    style={{ 
-                      width: `${(Object.values(gameState.playerData).filter(pd => pd.ready).length / 
-                               Object.keys(currentSession.players).length) * 100}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
-            </div>
+            <p className="text-gray-600 dark:text-gray-400">
+              Has elegido <strong>{choice}</strong>. Esperando a que otros jugadores decidan...
+            </p>
           )}
         </div>
       )}
       
-      {/* Game Results */}
-      {isGameOver && gameState.history && gameState.history.length > 0 && (
+      {/* Current Round Results (if history exists) */}
+      {gameState.history && gameState.history.length > 0 && !isGameOver && (
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Game Results</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-              <thead className="bg-gray-100 dark:bg-gray-700">
-                <tr>
-                  <th className="py-2 px-4 text-left">Round</th>
-                  <th className="py-2 px-4 text-left">Your Choice</th>
-                  <th className="py-2 px-4 text-left">Group Outcome</th>
-                  <th className="py-2 px-4 text-right">Your Points</th>
-                  <th className="py-2 px-4 text-right">Success</th>
+          <h3 className="text-lg font-semibold mb-4">Resultados de la Ronda Anterior</h3>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="flex justify-between mb-6">
+              <div className="text-center">
+                <h4 className="font-medium text-lg">{gameState.optionA}</h4>
+                <p className="text-3xl font-bold">{gameState.history[gameState.history.length - 1].choiceACounts}</p>
+                <p className="text-sm text-gray-500">jugadores</p>
+              </div>
+              <div className="text-center">
+                <h4 className="font-medium text-lg">{gameState.optionB}</h4>
+                <p className="text-3xl font-bold">{gameState.history[gameState.history.length - 1].choiceBCounts}</p>
+                <p className="text-sm text-gray-500">jugadores</p>
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <h4 className="font-medium mb-2">Elecciones por jugador</h4>
+              <div className="grid gap-2">
+                {players.map(player => {
+                  const lastRound = gameState.history[gameState.history.length - 1];
+                  const playerChoice = lastRound.choices[player.id];
+                  const playerScore = lastRound.scores[player.id];
+                  const isCurrentPlayer = player.id === currentPlayerId;
+                  
+                  return (
+                    <div 
+                      key={player.id} 
+                      className={`flex justify-between p-2 rounded ${
+                        isCurrentPlayer ? 'bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20' : 'bg-white dark:bg-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <span className="font-medium mr-2">{player.displayName}</span>
+                        {isCurrentPlayer && <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">Tú</span>}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="font-medium mr-2">{playerChoice}</span>
+                        <span className="text-sm text-gray-500">({playerScore} pts)</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Game History */}
+      {gameState.history && gameState.history.length > 0 && (
+        <div className="mt-auto mb-8">
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
+          
+          <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-center">{gameState.optionA}</th>
+                  <th className="py-2 text-center">{gameState.optionB}</th>
+                  <th className="py-2 text-left">Tu elección</th>
+                  <th className="py-2 text-right">Tus puntos</th>
                 </tr>
               </thead>
               <tbody>
                 {gameState.history.map((round, index) => {
                   if (!currentPlayerId) return null;
                   
-                  const yourChoice = round.choices[currentPlayerId];
-                  const allChoices = Object.values(round.choices);
-                  const isSuccess = allChoices.every(c => c === allChoices[0]);
-                  const yourScore = round.scores[currentPlayerId];
+                  const playerChoice = round.choices[currentPlayerId];
+                  const playerScore = round.scores[currentPlayerId];
                   
                   return (
-                    <tr key={index} className="border-b dark:border-gray-700">
-                      <td className="py-2 px-4">{round.round}</td>
-                      <td className="py-2 px-4 flex items-center">
-                        <span className="mr-1">{renderChoiceEmoji(yourChoice)}</span> 
-                        Option {yourChoice}
-                      </td>
-                      <td className="py-2 px-4">
-                        <div className="flex flex-col">
-                          <div className="flex space-x-2">
-                            <span className="flex items-center">
-                              <span className="text-xl mr-1">🅰️</span> 
-                              {allChoices.filter(c => c === 'A').length}
-                            </span>
-                            <span className="flex items-center">
-                              <span className="text-xl mr-1">🅱️</span> 
-                              {allChoices.filter(c => c === 'B').length}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-2 px-4 text-right">{yourScore}</td>
-                      <td className="py-2 px-4 text-right">
-                        {isSuccess ? '✅' : '❌'}
-                      </td>
+                    <tr key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-0">
+                      <td className="py-2">{round.round}</td>
+                      <td className="py-2 text-center">{round.choiceACounts}</td>
+                      <td className="py-2 text-center">{round.choiceBCounts}</td>
+                      <td className="py-2">{playerChoice}</td>
+                      <td className="py-2 text-right">{playerScore}</td>
                     </tr>
                   );
                 })}
@@ -580,8 +545,8 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
       {/* Final Scores */}
       {isGameOver && (
         <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 p-6 rounded-lg mb-8">
-          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Final Scores</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Puntuaciones Finales</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {players.map(player => {
               const playerData = gameState.playerData[player.id];
               if (!playerData) return null;
@@ -590,22 +555,26 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
               const isWinner = Object.values(gameState.playerData).every(
                 p => p.totalScore <= playerData.totalScore
               );
-              const hasHighestScore = playerData.totalScore > 0 && isWinner;
               
               return (
                 <div 
                   key={player.id} 
                   className={`p-4 rounded-lg ${
-                    hasHighestScore 
+                    isWinner 
                       ? 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-300 dark:border-yellow-600' 
                       : 'bg-white dark:bg-gray-800'
-                  } ${isCurrentPlayer ? 'ring-2 ring-blue-500' : ''}`}
+                  }`}
                 >
                   <div className="font-bold text-lg mb-1 flex items-center">
                     {player.displayName}
                     {isCurrentPlayer && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                        You
+                        Tú
+                      </span>
+                    )}
+                    {isWinner && (
+                      <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
+                        Ganador
                       </span>
                     )}
                   </div>
@@ -616,18 +585,15 @@ const CoordinationGame: React.FC<CoordinationGameProps> = ({ onGameUpdate }) => 
               );
             })}
           </div>
-        </div>
-      )}
-      
-      {/* Play Again Button */}
-      {isGameOver && (
-        <div className="text-center">
-          <button
-            onClick={handleExitGame}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all"
-          >
-            Return to Dashboard
-          </button>
+          
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleExitGame}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
+            >
+              Volver al Panel
+            </button>
+          </div>
         </div>
       )}
     </div>

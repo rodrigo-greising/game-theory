@@ -96,7 +96,7 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
         <div className="animate-pulse mb-4">
           <span className="text-5xl">🎭 🎟️</span>
         </div>
-        <h3 className="text-xl font-semibold mb-4">Loading Game...</h3>
+        <h3 className="text-xl font-semibold mb-4">Cargando Juego...</h3>
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
@@ -106,8 +106,8 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
   if (!players || players.length < 2) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires 2 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere 2 jugadores</p>
       </div>
     );
   }
@@ -394,22 +394,22 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : hasChosen 
-              ? "Waiting for your opponent..." 
-              : "Make your choice"}
+              ? "Esperando a tu oponente..." 
+              : "Haz tu elección"}
         </p>
         {playerPreferredEvent && (
           <div className="mt-2 p-2 inline-block bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 rounded-lg">
             <p className="text-sm">
-              Your preferred event: 
+              Tu evento preferido: 
               <span className="font-bold ml-1">
-                {renderPreferenceEmoji(playerPreferredEvent)} {playerPreferredEvent === 'opera' ? 'Opera' : 'Football'}
+                {renderPreferenceEmoji(playerPreferredEvent)} {playerPreferredEvent === 'opera' ? 'Ópera' : 'Fútbol'}
               </span>
             </p>
           </div>
@@ -419,7 +419,7 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
       {/* Current Round Overview (if game has history) */}
       {gameState.history && gameState.history.length > 0 && !isGameOver && (
         <div className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-medium mb-3">Last Round</h3>
+          <h3 className="text-lg font-medium mb-3">Última Ronda</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const isCurrentPlayer = player.id === currentPlayerId;
@@ -434,18 +434,18 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">{player.displayName}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600">
-                      {isCurrentPlayer ? 'You' : 'Opponent'}
+                      {isCurrentPlayer ? 'Tú' : 'Oponente'}
                     </span>
                   </div>
                   <div className="flex items-center mb-1">
                     <span className="text-2xl mr-2">{renderPreferenceEmoji(playerPreference)}</span>
-                    <span>Chose {playerPreference === 'opera' ? 'Opera' : 'Football'}</span>
+                    <span>Eligió {playerPreference === 'opera' ? 'Ópera' : 'Fútbol'}</span>
                   </div>
                   <div className="text-xs mb-1">
-                    Prefers: {renderPreferenceEmoji(preferredEvent)} {preferredEvent === 'opera' ? 'Opera' : 'Football'}
+                    Prefiere: {renderPreferenceEmoji(preferredEvent)} {preferredEvent === 'opera' ? 'Ópera' : 'Fútbol'}
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Last round: +{playerScore} pts</span>
+                    <span>Última ronda: +{playerScore} pts</span>
                     <span className="font-bold">Total: {totalScore} pts</span>
                   </div>
                 </div>
@@ -470,9 +470,9 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">🎭</span>
-                <h4 className="font-bold mb-1">Opera</h4>
+                <h4 className="font-bold mb-1">Ópera</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {playerPreferredEvent === 'opera' ? 'Your preferred event' : 'Not your preferred event'}
+                  {playerPreferredEvent === 'opera' ? 'Tu evento preferido' : 'No es tu evento preferido'}
                 </p>
               </div>
             </button>
@@ -488,9 +488,9 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
             >
               <div className="flex flex-col items-center">
                 <span className="text-4xl mb-2">⚽</span>
-                <h4 className="font-bold mb-1">Football</h4>
+                <h4 className="font-bold mb-1">Fútbol</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {playerPreferredEvent === 'football' ? 'Your preferred event' : 'Not your preferred event'}
+                  {playerPreferredEvent === 'football' ? 'Tu evento preferido' : 'No es tu evento preferido'}
                 </p>
               </div>
             </button>
@@ -498,7 +498,7 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
           
           {hasChosen && (
             <p className="mt-4 text-gray-600 dark:text-gray-400">
-              You chose to attend the {preference === 'opera' ? 'Opera' : 'Football game'}. Waiting for your opponent...
+              Has elegido asistir a la {preference === 'opera' ? 'Ópera' : 'partido de Fútbol'}. Esperando a tu oponente...
             </p>
           )}
         </div>
@@ -507,14 +507,14 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
       {/* Game Results */}
       {isGameOver && gameState.history && gameState.history.length > 0 && (
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Game Results</h3>
+          <h3 className="text-lg font-semibold mb-4">Resultados del Juego</h3>
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <div className="grid grid-cols-5 font-medium border-b dark:border-gray-700 pb-2 mb-2">
-              <div>Round</div>
-              <div>Your Choice</div>
-              <div>Opponent's Choice</div>
-              <div>Your Points</div>
-              <div>Opponent Points</div>
+              <div>Ronda</div>
+              <div>Tu Elección</div>
+              <div>Elección del Oponente</div>
+              <div>Tus Puntos</div>
+              <div>Puntos del Oponente</div>
             </div>
             {gameState.history.map((round, index) => {
               if (!currentPlayerId || !opponent) return null;
@@ -528,11 +528,11 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
                   <div>{round.round}</div>
                   <div className="flex items-center">
                     <span className="mr-1">{renderPreferenceEmoji(yourPreference)}</span> 
-                    {yourPreference === 'opera' ? 'Opera' : 'Football'}
+                    {yourPreference === 'opera' ? 'Ópera' : 'Fútbol'}
                   </div>
                   <div className="flex items-center">
                     <span className="mr-1">{renderPreferenceEmoji(opponentPreference)}</span>
-                    {opponentPreference === 'opera' ? 'Opera' : 'Football'}
+                    {opponentPreference === 'opera' ? 'Ópera' : 'Fútbol'}
                   </div>
                   <div>+{yourScore}</div>
                   <div>+{opponentScore}</div>
@@ -548,10 +548,10 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
                 
                 return (
                   <div key={player.id} className="text-center">
-                    <div className="font-medium mb-1">{player.displayName} {isCurrentPlayer ? '(You)' : ''}</div>
+                    <div className="font-medium mb-1">{player.displayName} {isCurrentPlayer ? '(Tú)' : ''}</div>
                     <div className="text-2xl font-bold">{playerData.totalScore} pts</div>
                     <div className="text-sm text-gray-500">
-                      Prefers: {renderPreferenceEmoji(playerData.preferredEvent)} {playerData.preferredEvent === 'opera' ? 'Opera' : 'Football'}
+                      Prefiere: {renderPreferenceEmoji(playerData.preferredEvent)} {playerData.preferredEvent === 'opera' ? 'Ópera' : 'Fútbol'}
                     </div>
                   </div>
                 );
@@ -564,7 +564,7 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
       {/* Final Scores */}
       {isGameOver && (
         <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 p-6 rounded-lg mb-8">
-          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Final Scores</h3>
+          <h3 className="text-xl font-semibold mb-4 text-blue-900 dark:text-blue-100">Puntuaciones Finales</h3>
           <div className="grid grid-cols-2 gap-4">
             {players.map(player => {
               const playerData = gameState.playerData[player.id];
@@ -588,12 +588,12 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
                     {player.displayName}
                     {isCurrentPlayer && (
                       <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                        You
+                        Tú
                       </span>
                     )}
                     {isWinner && (
                       <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
-                        Winner
+                        Ganador
                       </span>
                     )}
                   </div>
@@ -601,7 +601,7 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
                     {playerData.totalScore} pts
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    Preferred: {renderPreferenceEmoji(playerData.preferredEvent)} {playerData.preferredEvent === 'opera' ? 'Opera' : 'Football'}
+                    Preferido: {renderPreferenceEmoji(playerData.preferredEvent)} {playerData.preferredEvent === 'opera' ? 'Ópera' : 'Fútbol'}
                   </div>
                 </div>
               );
@@ -617,7 +617,7 @@ const EventCoordinationGame: React.FC<EventCoordinationGameProps> = ({ onGameUpd
             onClick={handleExitGame}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium"
           >
-            Return to Dashboard
+            Volver al Panel
           </button>
         </div>
       )}

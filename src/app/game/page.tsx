@@ -33,7 +33,7 @@ export default function GamePage() {
       await finishGame();
       router.push('/dashboard');
     } catch (error) {
-      console.error('Error finishing game:', error);
+      console.error('Error al finalizar el juego:', error);
     }
   };
   
@@ -73,14 +73,14 @@ export default function GamePage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center max-w-md">
-          <h2 className="text-xl font-semibold mb-4">Waiting for Players</h2>
-          <p className="mb-4">Tournament mode requires at least 2 players to start.</p>
-          <p className="text-sm text-gray-500">Current players: {players.length}</p>
+          <h2 className="text-xl font-semibold mb-4">Esperando Jugadores</h2>
+          <p className="mb-4">El modo torneo requiere al menos 2 jugadores para comenzar.</p>
+          <p className="text-sm text-gray-500">Jugadores actuales: {players.length}</p>
           <Link 
             href="/dashboard"
             className="inline-block mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm"
           >
-            Return to Dashboard
+            Volver al Panel Principal
           </Link>
         </div>
       </div>
@@ -92,14 +92,14 @@ export default function GamePage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center max-w-md">
-          <h2 className="text-xl font-semibold mb-4">Waiting for Players</h2>
-          <p className="mb-4">This game requires at least 2 players to start.</p>
-          <p className="text-sm text-gray-500">Current players: {players.length}</p>
+          <h2 className="text-xl font-semibold mb-4">Esperando Jugadores</h2>
+          <p className="mb-4">Este juego requiere al menos 2 jugadores para comenzar.</p>
+          <p className="text-sm text-gray-500">Jugadores actuales: {players.length}</p>
           <Link 
             href="/dashboard"
             className="inline-block mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm"
           >
-            Return to Dashboard
+            Volver al Panel Principal
           </Link>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function GamePage() {
     return (
       <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
         <p className="text-gray-500 dark:text-gray-400">
-          Game interface for "{gameId}" is not implemented yet
+          Interfaz de juego para "{gameId}" aún no implementada
         </p>
       </div>
     );
@@ -181,25 +181,25 @@ export default function GamePage() {
         <div className="min-h-screen p-8">
           <div className="max-w-4xl mx-auto">
             <header className="mb-8 flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Tournament: {currentSession.name}</h1>
+              <h1 className="text-3xl font-bold">Torneo: {currentSession.name}</h1>
               <a 
                 href="#"
                 onClick={handleReturnToDashboard}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm"
               >
-                Back to Dashboard
+                Volver al Panel Principal
               </a>
             </header>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-              <h2 className="text-xl font-semibold mb-4">Waiting for the Next Round</h2>
+              <h2 className="text-xl font-semibold mb-4">Esperando la Siguiente Ronda</h2>
               <p className="mb-4">
-                You are currently waiting for the next round of the tournament.
-                Please stand by while other players finish their matches.
+                Estás esperando la siguiente ronda del torneo.
+                Por favor, espera mientras otros jugadores terminan sus partidas.
               </p>
               
               <div className="mt-8">
-                <h3 className="text-lg font-medium mb-4">Tournament Progress</h3>
+                <h3 className="text-lg font-medium mb-4">Progreso del Torneo</h3>
                 <TournamentLeaderboard />
               </div>
             </div>
@@ -219,13 +219,13 @@ export default function GamePage() {
         <div className="min-h-screen p-8">
           <div className="max-w-4xl mx-auto">
             <header className="mb-8 flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Tournament: {currentSession.name}</h1>
+              <h1 className="text-3xl font-bold">Torneo: {currentSession.name}</h1>
               <a 
                 href="#"
                 onClick={handleReturnToDashboard}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm"
               >
-                Back to Dashboard
+                Volver al Panel Principal
               </a>
             </header>
             
@@ -233,33 +233,33 @@ export default function GamePage() {
               <div className="md:col-span-2">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Your Current Match</h2>
+                    <h2 className="text-xl font-semibold">Tu Partida Actual</h2>
                     <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
-                      Playing against {opponent?.displayName || 'Unknown'}
+                      Jugando contra {opponent?.displayName || 'Desconocido'}
                     </div>
                   </div>
                   {renderGameComponent()}
                 </div>
                 
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4">Tournament Leaderboard</h2>
+                  <h2 className="text-xl font-semibold mb-4">Clasificación del Torneo</h2>
                   <TournamentLeaderboard />
                 </div>
               </div>
               
               <div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Your Opponent</h2>
+                  <h2 className="text-xl font-semibold mb-4">Tu Oponente</h2>
                   <div className="flex items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center text-blue-800 dark:text-blue-100 mr-3">
                       {opponent?.displayName?.charAt(0).toUpperCase() || '?'}
                     </div>
                     <div>
-                      <p className="font-medium">{opponent?.displayName || 'Unknown Player'}</p>
+                      <p className="font-medium">{opponent?.displayName || 'Jugador Desconocido'}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {currentSession.tournamentResults && currentSession.tournamentResults[opponentId] ? 
-                          `Score: ${currentSession.tournamentResults[opponentId].totalScore}` : 
-                          'No previous matches'
+                          `Puntuación: ${currentSession.tournamentResults[opponentId].totalScore}` : 
+                          'Sin partidas previas'
                         }
                       </p>
                     </div>
@@ -267,7 +267,7 @@ export default function GamePage() {
                 </div>
                 
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4">Game Info</h2>
+                  <h2 className="text-xl font-semibold mb-4">Información del Juego</h2>
                   <GameInfo />
                 </div>
               </div>
@@ -284,34 +284,34 @@ export default function GamePage() {
       <div className="min-h-screen p-8">
         <div className="max-w-4xl mx-auto">
           <header className="mb-8 flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Game: {currentSession.name}</h1>
+            <h1 className="text-3xl font-bold">Juego: {currentSession.name}</h1>
             <a 
               href="#"
               onClick={handleReturnToDashboard}
               className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm"
             >
-              Back to Dashboard
+              Volver al Panel Principal
             </a>
           </header>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Game Board</h2>
+                <h2 className="text-xl font-semibold mb-4">Tablero de Juego</h2>
                 {renderGameComponent()}
               </div>
             </div>
             
             <div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Players</h2>
+                <h2 className="text-xl font-semibold mb-4">Jugadores</h2>
                 <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                   {players.map((player) => (
                     <li key={player.id} className="py-2 flex items-center">
                       <span className="flex-1">{player.displayName}</span>
                       {player.isHost && (
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                          Host
+                          Anfitrión
                         </span>
                       )}
                     </li>
@@ -320,16 +320,16 @@ export default function GamePage() {
               </div>
               
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Game Info</h2>
+                <h2 className="text-xl font-semibold mb-4">Información del Juego</h2>
                 <div className="space-y-2">
                   <p>
-                    <span className="font-medium">Session ID:</span> {currentSession.id}
+                    <span className="font-medium">ID de Sesión:</span> {currentSession.id}
                   </p>
                   <p>
-                    <span className="font-medium">Started:</span> {new Date(currentSession.createdAt).toLocaleString()}
+                    <span className="font-medium">Iniciado:</span> {new Date(currentSession.createdAt).toLocaleString()}
                   </p>
                   <p>
-                    <span className="font-medium">Status:</span> {currentSession.status}
+                    <span className="font-medium">Estado:</span> {currentSession.status}
                   </p>
                 </div>
               </div>

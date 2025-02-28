@@ -22,7 +22,7 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
   if (!currentSession || !currentSession.gameData || !currentSession.gameData.gameState) {
     return (
       <div className="p-6 text-center">
-        <p className="text-red-500">Game state not available.</p>
+        <p className="text-red-500">Estado del juego no disponible.</p>
       </div>
     );
   }
@@ -37,29 +37,135 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
   if (!players || players.length < 3) {
     return (
       <div className="p-6 text-center">
-        <p className="text-yellow-500">Waiting for all players to connect...</p>
-        <p className="text-sm mt-2 text-gray-400">This game requires at least 3 players</p>
+        <p className="text-yellow-500">Esperando a que todos los jugadores se conecten...</p>
+        <p className="text-sm mt-2 text-gray-400">Este juego requiere al menos 3 jugadores</p>
+      </div>
+    );
+  }
+  
+  // Initialize playerData if it doesn't exist yet
+  useEffect(() => {
+    const initializePlayerData = async () => {
+      if (
+        currentPlayerId && 
+        players.length >= 3 && 
+        gameState && 
+        gameState.status === 'in_progress' && 
+        (!gameState.playerData || Object.keys(gameState.playerData).length === 0 || !gameState.playerData[currentPlayerId])
+      ) {
+        setLoading(true);
+        try {
+          // Create initial player data for all players
+          const initialPlayerData: Record<string, PublicGoodsPlayerData> = {};
+          
+          players.forEach(player => {
+            initialPlayerData[player.id] = {
+              totalScore: gameState.initialEndowment, // Start with initial endowment
+              currentContribution: null,
+              ready: false
+            };
+          });
+          
+          // Update the game state with initialized player data
+          const updatedGameState: PublicGoodsGameState = {
+            ...gameState,
+            playerData: initialPlayerData
+          };
+          
+          await updateGameState(updatedGameState);
+        } catch (err: any) {
+          console.error('Error initializing player data:', err);
+          setError(err.message || 'Error al inicializar los datos del juego');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    initializePlayerData();
+  }, [currentPlayerId, gameState, players, updateGameState]);
+  
+  // Ensure gameState.playerData exists before trying to access it
+  if (!gameState.playerData) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-yellow-500">Inicializando datos del juego...</p>
+        <div className="mt-4 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
       </div>
     );
   }
   
   // Check if player has already made a contribution this round
-  const hasContributed = currentPlayerId && gameState.playerData && 
+  const hasContributed = currentPlayerId && 
+    gameState.playerData && 
     gameState.playerData[currentPlayerId] && 
     gameState.playerData[currentPlayerId]?.currentContribution !== undefined &&
     gameState.playerData[currentPlayerId]?.currentContribution !== null;
   
+  // Auto start game if needed (on first load)
+  useEffect(() => {
+    const autoStartGame = async () => {
+      if (
+        gameState.status === 'setup' && 
+        players.length >= 3 && 
+        currentUser?.uid && 
+        !loading && 
+        currentSession.players[currentUser.uid]?.isHost
+      ) {
+        setLoading(true);
+        try {
+          // Initialize the game if it's in setup state
+          const playerData: Record<string, PublicGoodsPlayerData> = {};
+          
+          players.forEach(player => {
+            playerData[player.id] = {
+              totalScore: gameState.initialEndowment, // Start with initial endowment
+              ready: false
+            };
+          });
+          
+          const updatedGameState: PublicGoodsGameState = {
+            ...gameState,
+            status: 'in_progress',
+            round: 1,
+            playerData: playerData
+          };
+          
+          await updateGameState(updatedGameState);
+          
+          if (onGameUpdate) {
+            onGameUpdate(updatedGameState);
+          }
+        } catch (err: any) {
+          setError(err.message || 'Error al iniciar el juego');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    autoStartGame();
+  }, [gameState, players, currentUser, updateGameState, onGameUpdate, loading, currentSession]);
+  
   // Function to make a contribution
-  const makeContribution = async (amount: number) => {
+  const makeContribution = async () => {
     if (!currentPlayerId || hasContributed || !isInProgress) return;
     
     setLoading(true);
     setError(null);
     
     try {
+      // Ensure the contribution is within valid range
+      const validContribution = Math.min(
+        Math.max(contribution, 0),
+        gameState.initialEndowment
+      );
+      
       // Ensure the player exists in playerData
       const currentPlayerData = gameState.playerData[currentPlayerId] || {
-        totalScore: 0,
+        totalScore: gameState.initialEndowment,
         ready: false
       };
       
@@ -68,7 +174,7 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
         ...gameState.playerData,
         [currentPlayerId]: {
           ...currentPlayerData,
-          currentContribution: amount,
+          currentContribution: validContribution,
           ready: true
         }
       };
@@ -83,7 +189,7 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       const allPlayersReady = Object.keys(currentSession.players).every(
         playerId => {
           // Add safety check to make sure the player exists in updatedPlayerData
-          const playerData = updatedPlayerData[playerId as string];
+          const playerData = updatedPlayerData[playerId];
           return playerData && 'ready' in playerData ? playerData.ready : false;
         }
       );
@@ -94,10 +200,8 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       } else {
         await updateGameState(updatedGameState);
       }
-      
-      setContribution(amount);
     } catch (err: any) {
-      setError(err.message || 'Failed to submit contribution');
+      setError(err.message || 'Error al enviar la contribución');
     } finally {
       setLoading(false);
     }
@@ -108,64 +212,57 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
     const playerIds = Object.keys(currentSession.players || {});
     if (!playerIds || playerIds.length < 3) {
       console.error("Public Goods Game requires at least 3 players");
-      return;
+      return; // Requires at least 3 players
     }
     
-    // Calculate the public pool
-    let publicPool = 0;
-    const contributions: Record<string, number> = {};
+    // Calculate total contribution
+    let totalContribution = 0;
     
-    // Get all contributions and sum them
-    for (const playerId of playerIds) {
-      const playerData = currentState.playerData[playerId];
-      const contribution = playerData && playerData.currentContribution !== undefined && playerData.currentContribution !== null 
-        ? playerData.currentContribution 
-        : 0;
-      
-      publicPool += contribution;
-      contributions[playerId] = contribution;
-    }
+    // Gather all player contributions
+    playerIds.forEach(playerId => {
+      const contribution = currentState.playerData[playerId]?.currentContribution;
+      if (contribution !== undefined && contribution !== null) {
+        totalContribution += contribution;
+      }
+    });
     
-    // Calculate the return after multiplying the public pool
-    const totalReturn = publicPool * currentState.multiplier;
-    const individualReturn = totalReturn / playerIds.length;
+    // Calculate the public good (multiplied by the multiplier)
+    const publicGood = totalContribution * currentState.multiplier;
     
-    // Calculate each player's score for this round
-    const scores: Record<string, number> = {};
-    const returns: Record<string, number> = {};
+    // Calculate individual returns (divided equally among all players)
+    const individualReturn = publicGood / playerIds.length;
     
-    for (const playerId of playerIds) {
-      const contribution = contributions[playerId];
-      const initialPoints = currentState.initialEndowment;
-      const kept = initialPoints - contribution;
-      const received = individualReturn;
-      const roundScore = kept + received;
-      
-      scores[playerId] = roundScore;
-      returns[playerId] = received;
-    }
-    
-    // Update scores and history
+    // Create the round result
     const roundResult = {
       round: currentState.round,
-      contributions: contributions,
-      publicPool: publicPool,
-      multiplier: currentState.multiplier,
-      returns: returns,
-      scores: scores
+      totalContribution,
+      publicGood,
+      individualReturn,
+      contributions: {} as Record<string, number>,
+      netGains: {} as Record<string, number>
     };
     
-    // Update player data with new scores and reset for next round
+    // Calculate net gains for each player
     const updatedPlayerData: Record<string, PublicGoodsPlayerData> = {};
     
-    for (const playerId of playerIds) {
-      const currentPlayerData = currentState.playerData[playerId] || { totalScore: 0, ready: false };
+    playerIds.forEach(playerId => {
+      const playerData = currentState.playerData[playerId];
+      const contribution = playerData?.currentContribution || 0;
+      
+      // Record contribution for history
+      roundResult.contributions[playerId] = contribution;
+      
+      // Calculate net gain: what they get back minus what they contributed
+      const netGain = individualReturn - contribution;
+      roundResult.netGains[playerId] = netGain;
+      
+      // Update player's total score and reset for next round
       updatedPlayerData[playerId] = {
-        totalScore: currentPlayerData.totalScore + scores[playerId],
+        totalScore: (playerData?.totalScore || 0) + individualReturn,
         currentContribution: null,
         ready: false
       };
-    }
+    });
     
     // Prepare updated game state
     const isLastRound = currentState.round >= currentState.maxRounds;
@@ -176,6 +273,88 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       playerData: updatedPlayerData,
       history: Array.isArray(currentState.history) ? [...currentState.history, roundResult] : [roundResult]
     };
+    
+    // For tournament mode, update the tournament results in the session
+    if (currentSession.isTournament && isLastRound) {
+      try {
+        // Create updated tournament results
+        const tournamentResults = currentSession.tournamentResults ? { ...currentSession.tournamentResults } : {};
+        
+        // Update tournament stats for each player
+        playerIds.forEach(playerId => {
+          if (!tournamentResults[playerId]) {
+            tournamentResults[playerId] = {
+              playerId,
+              totalScore: 0,
+              matchesPlayed: 0,
+              cooperateCount: 0,
+              defectCount: 0,
+              wins: 0,
+              losses: 0,
+              draws: 0
+            };
+          }
+          
+          // For public goods game, cooperation is measured by contribution relative to endowment
+          const playerContributions = Array.isArray(currentState.history)
+            ? currentState.history.map(round => round.contributions[playerId] || 0)
+            : [];
+          
+          // Add current round contributions
+          playerContributions.push(roundResult.contributions[playerId]);
+          
+          // Calculate average contribution as percentage of endowment
+          const avgContribution = playerContributions.reduce((sum, contrib) => sum + contrib, 0) / playerContributions.length;
+          const contributionRatio = avgContribution / currentState.initialEndowment;
+          
+          // Consider high contributions (>50% of endowment) as cooperative behavior
+          const cooperateThreshold = 0.5;
+          tournamentResults[playerId].cooperateCount += contributionRatio >= cooperateThreshold ? 1 : 0;
+          tournamentResults[playerId].defectCount += contributionRatio < cooperateThreshold ? 1 : 0;
+          
+          // Update player's tournament score
+          tournamentResults[playerId].totalScore += updatedPlayerData[playerId].totalScore;
+          
+          // Increment matches played
+          tournamentResults[playerId].matchesPlayed += 1;
+        });
+        
+        // Determine winners and losers based on final scores
+        const playerScores = playerIds.map(id => ({
+          id,
+          score: updatedPlayerData[id].totalScore
+        }));
+        
+        // Sort by score (highest first)
+        playerScores.sort((a, b) => b.score - a.score);
+        
+        // Find highest and lowest scores
+        const highestScore = playerScores[0].score;
+        const lowestScore = playerScores[playerScores.length - 1].score;
+        
+        // Update win/loss/draw records
+        playerIds.forEach(playerId => {
+          const playerScore = updatedPlayerData[playerId].totalScore;
+          
+          if (playerScore === highestScore && playerScore > lowestScore) {
+            // Player has highest score (may be tied with others)
+            tournamentResults[playerId].wins += 1;
+          } else if (playerScore === lowestScore && playerScore < highestScore) {
+            // Player has lowest score (may be tied with others)
+            tournamentResults[playerId].losses += 1;
+          } else {
+            // Player is in the middle or tied for both highest and lowest (everyone has same score)
+            tournamentResults[playerId].draws += 1;
+          }
+        });
+        
+        // Update the tournament results in the database
+        const sessionRef = ref(database, `sessions/${currentSession.id}`);
+        await update(sessionRef, { tournamentResults });
+      } catch (error) {
+        console.error('Error updating tournament results:', error);
+      }
+    }
     
     // Update the game state
     await updateGameState(updatedGameState);
@@ -193,50 +372,16 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       await finishGame();
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to exit game');
+      setError(err.message || 'Error al salir del juego');
     } finally {
       setLoading(false);
     }
   };
-
-  // Function to get player name by ID
-  const getPlayerName = (playerId: string): string => {
-    const player = players.find(p => p.id === playerId);
-    return player ? player.displayName : 'Unknown';
-  };
   
-  // Calculate the average contribution from all players in previous rounds
-  const calculateAverageContribution = (): number => {
-    if (!gameState.history || gameState.history.length === 0) return 0;
-    
-    const totalContributions = gameState.history.reduce((sum, round) => {
-      const roundTotal = Object.values(round.contributions).reduce((a, b) => a + b, 0);
-      return sum + roundTotal;
-    }, 0);
-    
-    const numberOfContributions = gameState.history.length * Object.keys(gameState.history[0].contributions).length;
-    return numberOfContributions > 0 ? totalContributions / numberOfContributions : 0;
-  };
-  
-  // Function to find the player with the highest score
-  const getLeader = (): { playerId: string, score: number } | null => {
-    if (!gameState.playerData) return null;
-    
-    let leader = null;
-    let highestScore = -1;
-    
-    Object.entries(gameState.playerData).forEach(([playerId, data]) => {
-      if (data.totalScore > highestScore) {
-        highestScore = data.totalScore;
-        leader = { playerId, score: highestScore };
-      }
-    });
-    
-    return leader;
-  };
-  
-  const leader = getLeader();
-  const averageContribution = calculateAverageContribution();
+  // Get current player data
+  const currentPlayerData = currentPlayerId && gameState.playerData 
+    ? gameState.playerData[currentPlayerId] 
+    : undefined;
   
   return (
     <div className="flex flex-col h-full">
@@ -250,215 +395,221 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       <div className="mb-6 text-center">
         <h3 className="text-xl font-semibold mb-2">
           {isGameOver 
-            ? "Game Over" 
-            : `Round ${gameState.round} of ${gameState.maxRounds}`}
+            ? "Juego Terminado" 
+            : `Ronda ${gameState.round} de ${gameState.maxRounds}`}
         </h3>
         <p className="text-gray-600 dark:text-gray-300">
           {isGameOver 
-            ? "Final results are in!" 
+            ? "Los resultados finales están listos" 
             : hasContributed 
-              ? "Waiting for other players..." 
-              : `Choose your contribution (0-${gameState.initialEndowment})`}
+              ? "Esperando a otros jugadores..." 
+              : "Haz tu contribución al fondo común"}
         </p>
       </div>
       
       {/* Game Board - Contribution Input */}
       {isInProgress && !isGameOver && (
         <div className="flex flex-col items-center mb-8">
-          <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-            <h4 className="font-semibold text-lg mb-4">Make Your Contribution</h4>
-            <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-              You have {gameState.initialEndowment} points. How much would you like to contribute to the public pool?
+          <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700">
+            <h4 className="font-bold text-lg mb-4 text-center">Tu Contribución</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center">
+              Elige cuánto contribuir al fondo común. El total será multiplicado por {gameState.multiplier} 
+              y luego dividido equitativamente entre todos los {players.length} jugadores.
             </p>
             
-            {!hasContributed ? (
-              <>
-                <div className="flex items-center justify-center mb-4">
-                  <input
-                    type="range"
-                    min="0"
-                    max={gameState.initialEndowment}
-                    value={contribution}
-                    onChange={(e) => setContribution(parseInt(e.target.value))}
-                    className="w-full"
-                    disabled={loading || hasContributed}
-                  />
-                </div>
-                <div className="flex justify-between mb-6">
-                  <span>0</span>
-                  <span className="font-bold">{contribution}</span>
-                  <span>{gameState.initialEndowment}</span>
-                </div>
-                <div className="flex justify-between text-sm mb-4">
-                  <div>
-                    <p className="font-medium">You keep:</p>
-                    <p className="text-lg">{gameState.initialEndowment - contribution}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">You contribute:</p>
-                    <p className="text-lg">{contribution}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => makeContribution(contribution)}
-                  disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50"
-                >
-                  {loading ? 'Confirming...' : 'Confirm Contribution'}
-                </button>
-              </>
-            ) : (
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p className="mb-2">You've contributed <strong>{gameState.playerData[currentPlayerId!]?.currentContribution}</strong> points</p>
-                <p className="text-sm text-gray-500">Waiting for other players to make their contributions...</p>
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span>0</span>
+                <span>{gameState.initialEndowment}</span>
               </div>
-            )}
+              <input
+                type="range"
+                min={0}
+                max={gameState.initialEndowment}
+                value={contribution}
+                onChange={(e) => setContribution(parseInt(e.target.value))}
+                disabled={loading || hasContributed}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+              />
+              <div className="mt-2 text-center">
+                <span className="text-2xl font-bold">{contribution}</span>
+                <span className="text-gray-500"> de {gameState.initialEndowment}</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col space-y-4">
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Tu saldo actual: <span className="font-bold">{currentPlayerData?.totalScore || 0}</span>
+                </p>
+              </div>
+              
+              <button
+                onClick={makeContribution}
+                disabled={loading || hasContributed}
+                className={`p-3 rounded-md text-white font-medium transition-all
+                  ${loading || hasContributed
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 hover:bg-blue-600'
+                  }`}
+              >
+                {loading ? 'Enviando...' : hasContributed ? 'Contribución Enviada' : 'Contribuir al Fondo Común'}
+              </button>
+            </div>
           </div>
           
-          {/* Info Box */}
-          <div className="w-full max-w-md mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-            <h4 className="font-semibold mb-2">How it works:</h4>
-            <p className="text-sm mb-2">
-              All contributions are added to a public pool, which is then multiplied by {gameState.multiplier} and 
-              divided equally among all players regardless of their individual contributions.
-            </p>
-            <p className="text-sm">
-              Your final points for the round = (Points you keep) + (Your share of the public pool)
-            </p>
+          {hasContributed && gameState.playerData && currentPlayerId && gameState.playerData[currentPlayerId] && (
+            <div className="mt-6 text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p>Has contribuido <strong>{gameState.playerData[currentPlayerId]?.currentContribution}</strong> al fondo común</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Esperando a que {Object.values(currentSession.players || {}).filter(p => 
+                  p.id !== currentPlayerId && 
+                  (!gameState.playerData[p.id] || 
+                   !gameState.playerData[p.id].ready)
+                ).map(p => p.displayName).join(', ')} contribuyan...
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Last Round Results */}
+      {Array.isArray(gameState.history) && gameState.history.length > 0 && !isGameOver && (
+        <div className="mb-8">
+          <h3 className="font-semibold text-lg mb-3">Resultados de la Ronda Anterior</h3>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-white dark:bg-gray-700 rounded-lg">
+                  <p className="text-sm text-gray-500 mb-1">Contribución Total</p>
+                  <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].totalContribution}</p>
+                </div>
+                <div className="p-3 bg-white dark:bg-gray-700 rounded-lg">
+                  <p className="text-sm text-gray-500 mb-1">Fondo Común (x{gameState.multiplier})</p>
+                  <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].publicGood}</p>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-white dark:bg-gray-700 rounded-lg text-center">
+                <p className="text-sm text-gray-500 mb-1">Retorno Individual</p>
+                <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].individualReturn}</p>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <h4 className="font-medium mb-2">Contribuciones individuales</h4>
+              <ul className="space-y-2">
+                {Object.entries(gameState.history[gameState.history.length - 1].contributions).map(([playerId, amount]) => {
+                  const player = players.find(p => p.id === playerId);
+                  const isCurrentPlayer = playerId === currentPlayerId;
+                  
+                  return (
+                    <li key={playerId} className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded">
+                      <span className={isCurrentPlayer ? 'font-medium' : ''}>
+                        {player?.displayName} {isCurrentPlayer ? '(Tú)' : ''}:
+                      </span>
+                      <span className="font-medium">{amount}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         </div>
       )}
       
-      {/* Game Results */}
+      {/* Game History */}
       {Array.isArray(gameState.history) && gameState.history.length > 0 && (
         <div className="mt-auto">
-          <h3 className="font-semibold text-lg mb-3">Game History</h3>
+          <h3 className="font-semibold text-lg mb-3">Historial del Juego</h3>
           
           <div className="overflow-auto max-h-64 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="py-2 text-left">Round</th>
-                  <th className="py-2 text-left">Your Contribution</th>
-                  <th className="py-2 text-left">Public Pool</th>
-                  <th className="py-2 text-right">Your Return</th>
-                  <th className="py-2 text-right">Your Score</th>
+                  <th className="py-2 text-left">Ronda</th>
+                  <th className="py-2 text-right">Tu Contribución</th>
+                  <th className="py-2 text-right">Total Contribuido</th>
+                  <th className="py-2 text-right">Fondo Común (x{gameState.multiplier})</th>
+                  <th className="py-2 text-right">Tu Retorno</th>
                 </tr>
               </thead>
               <tbody>
                 {gameState.history.map((round, index) => {
-                  // Skip rendering if round data is incomplete
-                  if (!round || !round.contributions || !round.scores) {
-                    return null;
-                  }
+                  if (!currentPlayerId) return null;
+                  
+                  const playerContribution = round.contributions[currentPlayerId] || 0;
+                  const playerNetGain = round.netGains[currentPlayerId] || 0;
                   
                   return (
-                    <tr key={index} className="border-b border-gray-200 dark:border-gray-700">
+                    <tr key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-0">
                       <td className="py-2">{round.round}</td>
-                      <td className="py-2">
-                        {currentPlayerId && round.contributions[currentPlayerId]}
-                      </td>
-                      <td className="py-2">
-                        {round.publicPool} × {round.multiplier} = {round.publicPool * round.multiplier}
-                      </td>
-                      <td className="py-2 text-right">
-                        {currentPlayerId && round.returns && round.returns[currentPlayerId].toFixed(1)}
-                      </td>
-                      <td className="py-2 text-right">
-                        {currentPlayerId && round.scores && round.scores[currentPlayerId].toFixed(1)}
+                      <td className="py-2 text-right">{playerContribution}</td>
+                      <td className="py-2 text-right">{round.totalContribution}</td>
+                      <td className="py-2 text-right">{round.publicGood}</td>
+                      <td className="py-2 text-right" className={`py-2 text-right ${playerNetGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {playerNetGain >= 0 ? '+' : ''}{round.individualReturn} ({playerNetGain >= 0 ? '+' : ''}{playerNetGain})
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
-              {isGameOver && gameState.playerData && (
-                <tfoot>
-                  <tr className="font-bold">
-                    <td colSpan={4} className="py-2 text-right">Final Score:</td>
-                    <td className="py-2 text-right">
-                      {currentPlayerId && gameState.playerData && 
-                       gameState.playerData[currentPlayerId]?.totalScore.toFixed(1)}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
             </table>
           </div>
-          
-          {/* Game Stats */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-              <h4 className="font-medium text-sm mb-1">Average Contribution</h4>
-              <p className="text-xl font-bold">{averageContribution.toFixed(1)} points</p>
+        </div>
+      )}
+      
+      {/* Final Scores */}
+      {isGameOver && (
+        <div className="mt-6">
+          <h3 className="font-semibold text-xl mb-4">Puntuaciones Finales</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="grid gap-4">
+              {players.map(player => {
+                if (!gameState.playerData[player.id]) return null;
+                
+                const playerData = gameState.playerData[player.id];
+                const isCurrentPlayer = player.id === currentPlayerId;
+                const isWinner = Object.values(gameState.playerData).every(
+                  p => p.totalScore <= playerData.totalScore
+                );
+                
+                return (
+                  <div 
+                    key={player.id} 
+                    className={`p-4 rounded-lg ${
+                      isWinner 
+                        ? 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-200 dark:border-yellow-600' 
+                        : 'bg-gray-50 dark:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className={`font-medium ${isCurrentPlayer ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                          {player.displayName} {isCurrentPlayer ? '(Tú)' : ''}
+                        </span>
+                        {isWinner && (
+                          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-0.5 rounded-full">
+                            Ganador
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-lg">{playerData.totalScore}</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-              <h4 className="font-medium text-sm mb-1">Your Score</h4>
-              <p className="text-xl font-bold">
-                {currentPlayerId && gameState.playerData && 
-                 gameState.playerData[currentPlayerId]?.totalScore.toFixed(1)}
-              </p>
-            </div>
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-              <h4 className="font-medium text-sm mb-1">Current Leader</h4>
-              <p className="text-xl font-bold">
-                {leader ? `${getPlayerName(leader.playerId)} (${leader.score.toFixed(1)})` : 'N/A'}
-              </p>
+            
+            <div className="mt-6 text-center">
+              <button
+                onClick={handleExitGame}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+              >
+                Volver al Panel
+              </button>
             </div>
           </div>
-          
-          {/* Add Game Over summary with leaderboard */}
-          {isGameOver && (
-            <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              <h2 className="text-2xl font-bold mb-4 text-center">Game Complete!</h2>
-              
-              <h3 className="text-lg font-semibold mb-2">Final Scores</h3>
-              <div className="overflow-hidden bg-white dark:bg-gray-700 rounded-lg shadow mb-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-gray-800">
-                      <th className="py-2 px-4 text-left">Player</th>
-                      <th className="py-2 px-4 text-right">Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {players
-                      .filter(player => gameState.playerData[player.id])
-                      .sort((a, b) => 
-                        (gameState.playerData[b.id]?.totalScore || 0) - 
-                        (gameState.playerData[a.id]?.totalScore || 0)
-                      )
-                      .map((player, idx) => (
-                        <tr 
-                          key={player.id} 
-                          className={`border-t border-gray-200 dark:border-gray-600 ${
-                            player.id === currentPlayerId ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                          }`}
-                        >
-                          <td className="py-2 px-4 flex items-center">
-                            <span className="mr-2 text-sm font-bold">{idx + 1}.</span>
-                            <span>{player.displayName}</span>
-                            {idx === 0 && <span className="ml-2">🏆</span>}
-                          </td>
-                          <td className="py-2 px-4 text-right font-medium">
-                            {gameState.playerData[player.id]?.totalScore.toFixed(1)}
-                          </td>
-                        </tr>
-                      ))
-                    }
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mt-6 text-center">
-                <button
-                  onClick={handleExitGame}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg"
-                >
-                  Return to Dashboard
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
