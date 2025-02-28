@@ -64,7 +64,7 @@ const CentipedeGame: Game = {
       status: 'in_progress',
       playerData: {},
       history: [],
-      currentNode: 1,
+      currentNode: 0,  // Start at node 0 (first decision point)
       isGameOver: false,
       // Payoff schedule [player1Payoff, player2Payoff] for each node
       payoffSchedule: [
@@ -76,6 +76,35 @@ const CentipedeGame: Game = {
         [9, 36],  // Node 6 (Player 2's turn)
         [36, 18]  // Final node (automatic end)
       ]
+    };
+  },
+  
+  // Initialize the game before it starts
+  initializeGame: (gameState: CentipedeGameState, playerIds: string[]): CentipedeGameState => {
+    // Make sure there are exactly 2 players
+    if (playerIds.length !== 2) {
+      throw new Error('Centipede Game requires exactly 2 players');
+    }
+    
+    // Initialize player data
+    const playerData: Record<string, CentipedePlayerData> = {};
+    playerIds.forEach(playerId => {
+      playerData[playerId] = {
+        totalScore: 0,
+        currentDecision: null,
+        ready: false
+      };
+    });
+    
+    // Player 1 (first in the array) goes first in Centipede Game
+    const firstPlayerId = playerIds[0];
+    
+    return {
+      ...gameState,
+      playerData,
+      currentTurnPlayerId: firstPlayerId,
+      currentNode: 0,
+      status: 'in_progress'
     };
   }
 };

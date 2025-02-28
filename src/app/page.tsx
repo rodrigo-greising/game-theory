@@ -65,7 +65,10 @@ export default function Home() {
   const handleSelectSession = async (session: any) => {
     try {
       setJoinError(null);
+      console.log(`Attempting to join session: ${session.id}`);
+      
       await joinSession(session.id);
+      console.log(`Successfully joined session: ${session.id}`);
       
       if (analytics) {
         logEvent(analytics as Analytics, 'join_session', {
@@ -76,6 +79,9 @@ export default function Home() {
       
       // Session joined successfully
       setActiveTab('join');
+      
+      // Redirect to dashboard
+      router.push('/dashboard');
     } catch (error: any) {
       console.error('Error joining session:', error);
       setJoinError(error.message || 'Failed to join session');

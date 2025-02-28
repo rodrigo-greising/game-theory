@@ -11,6 +11,7 @@ export interface Game {
   rules: string;
   validatePlayerCount: (playerCount: number) => boolean;
   getDefaultGameState: () => any;
+  initializeGame?: (gameState: any, playerIds: string[]) => any; // Optional method to initialize game with players
 }
 
 // Game state interface (can be extended by specific games)

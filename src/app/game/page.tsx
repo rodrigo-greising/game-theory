@@ -8,6 +8,8 @@ import Link from 'next/link';
 import PrisonersDilemmaGame from '@/components/games/PrisonersDilemmaGame';
 import StagHuntGame from '@/components/games/StagHuntGame';
 import ChickenGame from '@/components/games/ChickenGame';
+import TravelersDilemmaGame from '@/components/games/TravelersDilemmaGame';
+import CentipedeGame from '@/components/games/CentipedeGame';
 import EventCoordinationGame from '@/components/games/EventCoordinationGame';
 import MatchingPenniesGame from '@/components/games/MatchingPenniesGame';
 import GameInfo from '@/components/games/GameInfo';
@@ -113,6 +115,10 @@ export default function GamePage() {
       return <ChickenGame />;
     }
     
+    if (gameId === 'travelers-dilemma') {
+      return <TravelersDilemmaGame />;
+    }
+    
     if (gameId === 'battle-of-the-sexes') {
       return <EventCoordinationGame />;
     }
@@ -127,6 +133,10 @@ export default function GamePage() {
     
     if (gameId === 'dictator-game') {
       return <DictatorGame />;
+    }
+    
+    if (gameId === 'centipede-game') {
+      return <CentipedeGame />;
     }
     
     // Fallback for unrecognized games

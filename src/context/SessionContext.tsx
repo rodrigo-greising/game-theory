@@ -180,34 +180,57 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     if (!user) throw new Error('User must be authenticated to join a session');
     
     try {
+      setLoading(true);
+      console.log(`Attempting to join session ${sessionId}`);
+      
       // Check if session exists
       const sessionRef = ref(database, `sessions/${sessionId}`);
       const snapshot = await get(sessionRef);
       
       if (!snapshot.exists()) {
+        console.error('Session not found');
         throw new Error('Session not found');
       }
 
       const sessionData = snapshot.val();
+      console.log('Session data:', sessionData);
       
       // Check if session is already playing
       if (sessionData.status === 'playing') {
+        console.error('Game already in progress');
         throw new Error('Game already in progress');
       }
       
       // Check if user is already in this session
       if (sessionData.players && sessionData.players[user.uid]) {
+        console.log('User already in session, no need to join again');
         // User is already in this session, no need to join again
         return;
       }
       
       // Count current players
       const currentPlayerCount = sessionData.players ? Object.keys(sessionData.players).length : 0;
+      console.log(`Current player count: ${currentPlayerCount}`);
       
       // Validate against game constraints if game data exists
       if (sessionData.gameData && sessionData.gameData.gameId) {
-        if (!isValidPlayerCount(sessionData.gameData.gameId, currentPlayerCount + 1)) {
-          throw new Error(`This game does not support ${currentPlayerCount + 1} players`);
+        const gameId = sessionData.gameData.gameId;
+        console.log(`Validating player count for game: ${gameId}`);
+        
+        // Get the game details
+        const game = getGameById(gameId);
+        if (game) {
+          // During joining phase, only check if we're exceeding the maximum player count
+          // Don't enforce minimum player count until the game actually starts
+          if (currentPlayerCount + 1 > game.maxPlayers) {
+            console.error(`This game does not support more than ${game.maxPlayers} players`);
+            throw new Error(`This game does not support more than ${game.maxPlayers} players`);
+          } else {
+            console.log(`Player count ${currentPlayerCount + 1} is within max limit of ${game.maxPlayers}`);
+          }
+        } else {
+          console.error(`Game with ID ${gameId} not found`);
+          throw new Error(`Game with ID ${gameId} not found`);
         }
       }
       
@@ -219,12 +242,17 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
         joinedAt: Date.now()
       };
       
+      console.log(`Adding player to session: ${JSON.stringify(player)}`);
+      
       // Add player to session
       await update(ref(database, `sessions/${sessionId}/players/${user.uid}`), player);
+      console.log('Successfully joined session');
     } catch (error: any) {
       console.error('Error joining session:', error);
       setError(error.message);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -298,13 +326,22 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       } else {
         // For regular mode, validate player count against game requirements
         if (!isValidPlayerCount(currentSession.gameData.gameId, currentPlayerCount)) {
-          throw new Error(`This game requires between ${game.minPlayers} and ${game.maxPlayers} players`);
+          const minPlayers = game.minPlayers || 2;
+          const maxPlayers = game.maxPlayers || 10;
+          
+          if (currentPlayerCount < minPlayers) {
+            throw new Error(`This game requires at least ${minPlayers} players. You have ${currentPlayerCount}.`);
+          } else if (currentPlayerCount > maxPlayers) {
+            throw new Error(`This game allows at most ${maxPlayers} players. You have ${currentPlayerCount}.`);
+          } else {
+            throw new Error(`This game requires between ${minPlayers} and ${maxPlayers} players`);
+          }
         }
       }
       
       // Initialize playerData with all current players
       const playerIds = Object.keys(currentSession.players);
-      const initialGameState = game.getDefaultGameState();
+      let initialGameState = game.getDefaultGameState();
       
       if (currentSession.isTournament) {
         // Tournament mode: Create random pairings of players
@@ -366,6 +403,40 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
           }
         }
         
+        // Initialize game state for centipede game
+        if (game.id === 'centipede-game' && game.initializeGame) {
+          // For tournament mode with matches, we need to initialize each pair separately
+          Object.keys(playerMatches).forEach(playerId => {
+            const opponentId = playerMatches[playerId];
+            
+            // Only process each pair once and skip players who are waiting
+            if (opponentId !== 'waiting' && playerId < opponentId) {
+              // Use the initializeGame method to set up the game for this pair
+              const pairPlayerIds = [playerId, opponentId];
+              const gameStateForPair = game.initializeGame!(initialGameState, pairPlayerIds);
+              
+              // Copy the initialized state properties to the main gameState
+              initialGameState.currentNode = gameStateForPair.currentNode;
+              initialGameState.status = 'in_progress';
+              
+              // Set up playerData if it doesn't exist
+              if (!initialGameState.playerData) {
+                initialGameState.playerData = {};
+              }
+              
+              // Add player data for this pair
+              initialGameState.playerData[playerId] = gameStateForPair.playerData[playerId];
+              initialGameState.playerData[opponentId] = gameStateForPair.playerData[opponentId];
+              
+              // For the first match we encounter, set the currentTurnPlayerId
+              // This will be overridden by each individual game instance's logic
+              if (!initialGameState.currentTurnPlayerId) {
+                initialGameState.currentTurnPlayerId = playerId;
+              }
+            }
+          });
+        }
+        
         // Update session with player matches
         await update(ref(database, `sessions/${currentSession.id}`), {
           status: 'playing',
@@ -399,14 +470,27 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
           }
         }
         
-        // Update session status to playing and set initial game state
-        await update(ref(database, `sessions/${currentSession.id}`), {
-          status: 'playing',
-          gameData: {
-            ...currentSession.gameData,
-            gameState: initialGameState
-          }
-        });
+        // For Centipede Game or Travelers Dilemma, initialize with player-specific data
+        if ((game.id === 'centipede-game' || game.id === 'travelers-dilemma') && game.initializeGame) {
+          const updatedGameState = game.initializeGame(initialGameState, playerIds);
+          // Update session status to playing and set initial game state
+          await update(ref(database, `sessions/${currentSession.id}`), {
+            status: 'playing',
+            gameData: {
+              ...currentSession.gameData,
+              gameState: updatedGameState
+            }
+          });
+        } else {
+          // For other games, use the original initialGameState
+          await update(ref(database, `sessions/${currentSession.id}`), {
+            status: 'playing',
+            gameData: {
+              ...currentSession.gameData,
+              gameState: initialGameState
+            }
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error starting game:', error);
@@ -595,7 +679,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
         throw new Error('Game not found in registry');
       }
       
-      const initialGameState = game.getDefaultGameState();
+      let initialGameState = game.getDefaultGameState();
       
       // Initialize game state for prisoner's dilemma
       if (game.id === 'prisoners-dilemma') {
@@ -620,6 +704,34 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
         if (!Array.isArray(initialGameState.history)) {
           initialGameState.history = [];
         }
+      }
+      
+      // Initialize game state for centipede game
+      if (game.id === 'centipede-game' && game.initializeGame) {
+        // For tournament mode with matches, we need to initialize each pair separately
+        Object.keys(playerMatches).forEach(playerId => {
+          const opponentId = playerMatches[playerId];
+          
+          // Only process each pair once and skip players who are waiting
+          if (opponentId !== 'waiting' && playerId < opponentId) {
+            // Use the initializeGame method to set up the game for this pair
+            const pairPlayerIds = [playerId, opponentId];
+            const gameStateForPair = game.initializeGame!(initialGameState, pairPlayerIds);
+            
+            // Copy the initialized state properties to the main gameState
+            initialGameState.currentNode = gameStateForPair.currentNode;
+            initialGameState.status = 'in_progress';
+            
+            // Set up playerData if it doesn't exist
+            if (!initialGameState.playerData) {
+              initialGameState.playerData = {};
+            }
+            
+            // Add player data for this pair
+            initialGameState.playerData[playerId] = gameStateForPair.playerData[playerId];
+            initialGameState.playerData[opponentId] = gameStateForPair.playerData[opponentId];
+          }
+        });
       }
       
       // Update session with new matches
