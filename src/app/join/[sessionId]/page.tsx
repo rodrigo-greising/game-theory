@@ -14,9 +14,8 @@ type JoinPageProps = {
 };
 
 export default function JoinSessionPage({ params }: JoinPageProps) {
-  // Use React.use to unwrap the params promise
-  const unwrappedParams = React.use(params);
-  const sessionId = unwrappedParams.sessionId;
+  // Directly access the sessionId from params
+  const sessionId = params.sessionId;
   
   const { user, loading: authLoading } = useAuth();
   const { joinSession, currentSession, loading: sessionLoading } = useSession();

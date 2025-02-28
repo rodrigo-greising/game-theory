@@ -341,7 +341,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       
       // Initialize playerData with all current players
       const playerIds = Object.keys(currentSession.players);
-      let initialGameState = game.getDefaultGameState();
+      const initialGameState = game.getDefaultGameState();
       
       if (currentSession.isTournament) {
         // Tournament mode: Create random pairings of players
@@ -679,7 +679,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
         throw new Error('Game not found in registry');
       }
       
-      let initialGameState = game.getDefaultGameState();
+      const initialGameState = game.getDefaultGameState();
       
       // Initialize game state for prisoner's dilemma
       if (game.id === 'prisoners-dilemma') {
