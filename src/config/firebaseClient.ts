@@ -16,7 +16,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only if all required config values are provided
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId || !firebaseConfig.databaseURL) {
   console.error(
     'Firebase configuration error: Missing required environment variables. ' +
     'Make sure you have set up your .env.local file correctly.'
