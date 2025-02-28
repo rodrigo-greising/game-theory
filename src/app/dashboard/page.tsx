@@ -44,31 +44,31 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-        <div className="container mx-auto px-4 py-8">
-          <header className="flex justify-between items-center mb-12">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <header className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-12 gap-4">
             <div className="flex items-center space-x-2">
               <Link href="/" className="flex items-center space-x-2">
-                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-xl font-bold">G</span>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-bold">G</span>
                 </div>
-                <h1 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">GameTheory</h1>
+                <h1 className="text-xl sm:text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">GameTheory</h1>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               <Link 
                 href="/"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium text-sm sm:text-base w-full text-center"
               >
                 Inicio
               </Link>
             </div>
           </header>
           
-          <main className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8 text-center">Panel de Juego</h1>
+          <main className="w-full max-w-4xl mx-auto">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8 text-center">Panel de Juego</h1>
             
             {currentSession ? (
-              <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
+              <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-8 rounded-xl shadow-2xl border border-gray-700">
                 <CurrentSession />
                 
                 {/* Show tournament rankings if in tournament mode */}
@@ -77,12 +77,12 @@ export default function DashboardPage() {
                 )}
               </div>
             ) : (
-              <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700 text-center">
-                <h2 className="text-xl font-semibold mb-4">No estás en una sesión</h2>
-                <p className="text-gray-300 mb-6">Actualmente no formas parte de ninguna sesión de juego.</p>
+              <div className="bg-gray-800/50 backdrop-blur-sm p-4 sm:p-8 rounded-xl shadow-2xl border border-gray-700 text-center">
+                <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">No estás en una sesión</h2>
+                <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">Actualmente no formas parte de ninguna sesión de juego.</p>
                 <Link 
                   href="/"
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium"
+                  className="w-full sm:w-auto inline-block px-4 sm:px-6 py-2 sm:py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm sm:text-base"
                 >
                   Unirse o Crear una Sesión
                 </Link>

@@ -91,8 +91,8 @@ export default function Home() {
 
         <main className="flex flex-col items-center">
           {/* Hero Section */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
+          <div className="text-center mb-16 w-full max-w-4xl">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
                 Juegos Estratégicos
               </span>
@@ -113,13 +113,13 @@ export default function Home() {
 
           {/* User Content when logged in */}
           {user && (
-            <div className="w-full max-w-4xl bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
+            <div className="w-full max-w-4xl bg-gray-800/50 backdrop-blur-sm p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-700">
               <h2 className="text-2xl font-bold mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">¡Bienvenido, Jugador!</h2>
               
               {/* Profile Section */}
-              <div className="mb-8">
+              <div className="mb-10">
                 <h3 className="text-xl font-semibold mb-4 text-gray-200">Tu Perfil de Jugador</h3>
-                <form onSubmit={handleUpdateProfile} className="flex flex-col md:flex-row gap-4 items-end">
+                <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-0 sm:flex sm:flex-row sm:gap-4 sm:items-end">
                   <div className="flex-1">
                     <label htmlFor="displayName" className="block text-sm font-medium text-gray-300 mb-1">
                       Nombre de Usuario
@@ -136,7 +136,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+                    className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
                   >
                     {isUpdating ? 'Actualizando...' : 'Actualizar Perfil'}
                   </button>
@@ -147,16 +147,16 @@ export default function Home() {
               </div>
               
               {/* My Sessions Section */}
-              <div className="mb-8">
+              <div className="mb-10">
                 <h3 className="text-xl font-semibold mb-4 text-gray-200">Mis Sesiones</h3>
                 <MySessionsList />
               </div>
               
               {/* Create Session Button & Modal */}
-              <div className="mb-8 flex flex-col items-center">
+              <div className="mb-10 flex flex-col items-center">
                 <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                   <DialogTrigger asChild>
-                    <button className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full text-lg font-medium shadow-lg transform transition hover:scale-105">
+                    <button className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full text-lg font-medium shadow-lg transform transition hover:scale-105">
                       Crear Nueva Sesión
                     </button>
                   </DialogTrigger>
@@ -185,7 +185,7 @@ export default function Home() {
               {/* Join Session Info Section */}
               <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
                 <h3 className="text-lg font-medium mb-2 text-gray-200">¿Cómo unirse a una sesión?</h3>
-                <p className="text-gray-300">
+                <p className="text-gray-300 text-sm">
                   Las sesiones solo pueden unirse a través de un enlace directo o código QR compartido por el creador de la sesión.
                   Pide a tus amigos que compartan su enlace de sesión contigo para unirte a su juego.
                 </p>
@@ -194,7 +194,7 @@ export default function Home() {
           )}
         </main>
 
-        <footer className="mt-20 text-center text-gray-500 text-sm">
+        <footer className="mt-16 sm:mt-20 text-center text-gray-500 text-sm">
           <p>© {new Date().getFullYear()} GameTheory. Todos los derechos reservados.</p>
         </footer>
       </div>

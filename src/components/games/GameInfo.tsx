@@ -50,8 +50,8 @@ const GameInfo: React.FC<GameInfoProps> = ({ session }) => {
     : isValidPlayerCount(game.id, playerCount);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4">
         <h3 className="text-xl font-bold">{game.name}</h3>
         
         {isTournament ? (
@@ -92,7 +92,7 @@ const GameInfo: React.FC<GameInfoProps> = ({ session }) => {
       
       <div className="mt-4">
         <h4 className="font-medium mb-2 text-gray-700 dark:text-gray-200">Reglas del Juego</h4>
-        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-sm whitespace-pre-line">
+        <div className="bg-gray-50 dark:bg-gray-700 p-3 sm:p-4 rounded-md text-sm sm:text-base whitespace-pre-line w-full max-w-none">
           {game.rules}
         </div>
       </div>
