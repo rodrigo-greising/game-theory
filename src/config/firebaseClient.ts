@@ -2,10 +2,13 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
   setPersistence, 
-  browserLocalPersistence, 
-  browserSessionPersistence, 
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
+  browserSessionPersistence,
   inMemoryPersistence,
-  indexedDBLocalPersistence
+  browserPopupRedirectResolver,
+  initializeAuth,
+  Auth
 } from 'firebase/auth';
 import { getAnalytics, Analytics } from 'firebase/analytics';
 import { getDatabase } from 'firebase/database';
@@ -30,88 +33,40 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.proj
   );
 }
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const database = getDatabase(app);
+// Initialize Firebase app with the configuration
+const app = getApps().length 
+  ? getApp() 
+  : initializeApp(firebaseConfig);
 
-// Configure auth persistence with improved mobile support
+// CRITICAL FIX: Use initializeAuth instead of getAuth
+// This prevents the iframe loading issue causing cross-origin problems
+let auth: Auth;
 if (typeof window !== 'undefined') {
-  // Check browser environment and capabilities
-  const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
-  const isIframe = window !== window.top;
-  const hasLocalStorageAccess = (() => {
-    try {
-      window.localStorage.setItem('auth_test', '1');
-      window.localStorage.removeItem('auth_test');
-      return true;
-    } catch (e) {
-      return false;
-    }
-  })();
-  const hasIndexedDBAccess = (() => {
-    if (typeof indexedDB === 'undefined') return false;
-    try {
-      // Simple test to see if IndexedDB is available and accessible
-      const request = indexedDB.open('auth_test');
-      request.onsuccess = (event) => {
-        const target = event.target as IDBOpenDBRequest;
-        if (target && target.result) {
-          const db = target.result;
-          db.close();
-          indexedDB.deleteDatabase('auth_test');
-        }
-      };
-      return true;
-    } catch (e) {
-      return false;
-    }
-  })();
-
-  console.log(`Auth environment: Mobile: ${isMobile}, iFrame: ${isIframe}, LocalStorage: ${hasLocalStorageAccess}, IndexedDB: ${hasIndexedDBAccess}`);
-
-  // Set the most appropriate persistence method
-  const setPersistenceForEnvironment = async () => {
-    try {
-      // For mobile devices, try IndexedDB first (most reliable on modern mobile browsers)
-      if (isMobile && hasIndexedDBAccess) {
-        console.log('Setting persistence to INDEXED_DB for mobile');
-        await setPersistence(auth, indexedDBLocalPersistence);
-        return;
-      }
-
-      // For non-mobile with localStorage access
-      if (hasLocalStorageAccess && !isIframe) {
-        console.log('Setting persistence to LOCAL');
-        await setPersistence(auth, browserLocalPersistence);
-        return;
-      }
-
-      // For iframe or environments with localStorage issues, but with IndexedDB
-      if (hasIndexedDBAccess) {
-        console.log('Setting persistence to INDEXED_DB as fallback');
-        await setPersistence(auth, indexedDBLocalPersistence);
-        return;
-      }
-
-      // Session persistence as a fallback
-      console.log('Setting persistence to SESSION as fallback');
-      await setPersistence(auth, browserSessionPersistence);
-    } catch (error) {
-      console.warn('Failed to set preferred persistence, falling back to IN_MEMORY:', error);
-      try {
-        await setPersistence(auth, inMemoryPersistence);
-      } catch (finalError) {
-        console.error('Failed to set any persistence method:', finalError);
-      }
-    }
-  };
-
-  // Execute the persistence setup
-  setPersistenceForEnvironment().catch(error => {
-    console.error('Persistence initialization error:', error);
-  });
+  try {
+    // This approach is recommended by Firebase for apps with CORS issues
+    console.log('Initializing Firebase Auth with custom settings for better cross-browser support');
+    auth = initializeAuth(app, {
+      // Explicitly specify persistence methods in order of preference
+      persistence: [
+        indexedDBLocalPersistence, // Try IndexedDB first (better for desktop)
+        browserLocalPersistence,   // Then localStorage
+        browserSessionPersistence  // Then sessionStorage as fallback
+      ],
+      // Explicitly use the popup redirect resolver
+      popupRedirectResolver: browserPopupRedirectResolver
+    });
+    console.log('Firebase Auth initialized with custom settings');
+  } catch (authInitError) {
+    console.warn('Failed to initialize Auth with custom settings, falling back to default:', authInitError);
+    auth = getAuth(app);
+  }
+} else {
+  // Server-side - just use basic setup
+  auth = getAuth(app);
 }
+
+// Initialize other Firebase services
+const database = getDatabase(app);
 
 // Initialize Analytics only in the browser environment
 let analytics: Analytics | null = null;

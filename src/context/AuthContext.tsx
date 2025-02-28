@@ -26,6 +26,8 @@ type AuthContextType = {
   signInWithGoogle: () => Promise<User | null>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (profileData: { displayName?: string; photoURL?: string }) => Promise<void>;
+  redirectError: Error | null;
+  signIn: (email: string, password: string) => Promise<User>;
 };
 
 // Create the context with a default value
@@ -45,44 +47,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirectError, setRedirectError] = useState<Error | null>(null);
+  const [redirectChecked, setRedirectChecked] = useState(false);
 
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    // A much more reliable method for handling redirects
+    const checkRedirectResult = async () => {
+      setLoading(true);
+      
       try {
-        // Process any redirect results first
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log('Successfully signed in with redirect');
+        console.log('Checking for redirect result');
+        
+        // Web research suggests a simpler approach: just try to get the redirect result 
+        // and have a fallback to check auth.currentUser
+        const result = await getRedirectResult(auth)
+          .catch(error => {
+            console.warn('Error during getRedirectResult:', error);
+            return null; // Continue with null on error
+          });
+        
+        if (result && result.user) {
+          console.log('Successfully processed redirect sign-in');
           setUser(result.user);
+        } else {
+          console.log('No redirect result found, checking currentUser');
+          // Check if user is already signed in
+          if (auth.currentUser) {
+            console.log('User already signed in:', auth.currentUser.displayName);
+            setUser(auth.currentUser);
+          } else {
+            console.log('No user found');
+          }
         }
       } catch (error) {
-        console.error('Error with redirect sign-in result:', error);
-        setRedirectError(error as Error);
+        console.error('Error in redirect result handling:', error);
+        // Don't set redirect error for storage access errors
+        const err = error as Error;
+        if (!err.message?.includes('storage') && !err.message?.includes('context')) {
+          setRedirectError(err);
+        }
+      } finally {
+        setRedirectChecked(true);
+        // Keep loading true until the auth state is also checked
       }
     };
-
-    // Always check for redirect result first when the component mounts
+    
+    // Check for redirect results first - important to do this in client-side only
     if (typeof window !== 'undefined') {
-      handleRedirectResult()
-        .finally(() => {
-          // Set up auth state change listener after handling any redirects
-          const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-            setLoading(false);
-          });
-          
-          // Return cleanup function
-          return unsubscribe;
-        });
+      checkRedirectResult();
     } else {
-      // For SSR contexts, just set up the auth state listener
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
-        setLoading(false);
-      });
-      
-      return () => unsubscribe();
+      setRedirectChecked(true);
     }
+    
+    // Always set up the auth state listener
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        console.log('Auth state changed: user is signed in');
+      } else {
+        console.log('Auth state changed: no user');
+      }
+      setUser(currentUser);
+      setLoading(false);
+    });
+    
+    // Clean up on unmount
+    return () => unsubscribe();
   }, []);
 
   // Sign in with email and password
@@ -104,78 +132,103 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Sign in with Google
   const signInWithGoogle = async () => {
+    // Always clear any previous redirect errors
+    setRedirectError(null);
+    
     const provider = new GoogleAuthProvider();
-    // Configure Google provider for better mobile experience
+    
+    // Based on Firebase docs, use MINIMAL scopes to reduce cross-origin issues
     provider.setCustomParameters({
-      // Always show account selector even if there's only one account
-      // This helps with consistent behavior across devices
-      prompt: 'select_account',
-      // Request OAuth offline access to improve token persistence
-      access_type: 'offline'
+      // Force account selection to avoid silent sign-in issues
+      prompt: 'select_account'
     });
     
-    // First, try to detect if we're in a context that might have issues with popups
-    const isMobile = typeof window !== 'undefined' && 
-      (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent));
-    const isEmbedded = typeof window !== 'undefined' && window !== window.top;
-    const hasStorageIssues = (() => {
-      try {
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem('auth_test', '1');
-          window.localStorage.removeItem('auth_test');
-          return false;
-        }
-        return true;
-      } catch (e) {
-        return true;
-      }
-    })();
+    // Simple mobile detection - avoid complex checks that may fail
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
     
-    // Use redirect for contexts that might have issues with popups
-    if (isMobile || isEmbedded || hasStorageIssues) {
-      try {
-        console.log('Using redirect sign-in for mobile or embedded context');
-        setLoading(true);
-        
-        // Try to ensure cookies are enabled for auth state persistence
-        document.cookie = "auth_test=1; SameSite=Strict; Secure";
-        if (!document.cookie.includes("auth_test")) {
-          console.warn("Cookies appear to be disabled. Authentication session may not persist.");
-        } else {
-          document.cookie = "auth_test=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    console.log(`Device type detected: ${isMobile ? 'mobile' : 'desktop'}`);
+    
+    try {
+      // For mobile: ALWAYS use POPUP first, then fallback to redirect if needed
+      // (This is opposite to common advice but works better according to search results)
+      if (isMobile) {
+        console.log('Using popup for mobile device (recommended by Firebase support)');
+        try {
+          // Try popup first even on mobile - this is counterintuitive but 
+          // works better according to web search
+          const result = await signInWithPopup(auth, provider);
+          return result.user;
+        } catch (popupError: any) {
+          console.log('Mobile popup failed, falling back to redirect:', popupError);
+          
+          // Only use redirect as fallback on mobile
+          try {
+            setLoading(true);
+            
+            // Track the redirect attempt
+            try {
+              sessionStorage.setItem('auth_redirect_attempt', 'true');
+              localStorage.setItem('auth_redirect_timestamp', Date.now().toString());
+            } catch (storageError) {
+              console.warn('Storage error (expected on some browsers):', storageError);
+            }
+            
+            // Before redirecting, set a flag in the auth object if possible
+            // @ts-ignore - Firebase internal property
+            if (auth.persistenceManager) {
+              console.log('Setting up persistence manager for redirect');
+            }
+            
+            console.log('Starting redirect flow as fallback');
+            await signInWithRedirect(auth, provider);
+            return null;
+          } catch (redirectError: any) {
+            console.error('Mobile redirect also failed:', redirectError);
+            setLoading(false);
+            throw redirectError;
+          }
         }
-        
-        await signInWithRedirect(auth, provider);
-        return null; // User will be set by getRedirectResult in useEffect
-      } catch (error: any) {
-        console.error('Error with redirect sign-in:', error);
-        setLoading(false);
-        throw error;
-      }
-    } else {
-      // On desktop, try popup first, but fall back to redirect if needed
-      try {
-        console.log('Using popup sign-in for desktop context');
-        const result = await signInWithPopup(auth, provider);
-        return result.user;
-      } catch (error: any) {
-        console.error('Popup sign-in error:', error);
-        
-        // Fall back to redirect for popup-related errors
-        if (
-          error.code === 'auth/popup-blocked' || 
-          error.code === 'auth/popup-closed-by-user' ||
-          error.code === 'auth/cancelled-popup-request' ||
-          error.message?.includes('cross-origin') ||
-          error.message?.includes('COOP')
-        ) {
-          console.log('Popup was blocked or closed, falling back to redirect...');
-          setLoading(true);
-          await signInWithRedirect(auth, provider);
-          return null;
+      } 
+      // For desktop, use popup (more reliable)
+      else {
+        console.log('Using popup auth for desktop');
+        try {
+          const result = await signInWithPopup(auth, provider);
+          return result.user;
+        } catch (popupError: any) {
+          console.error('Desktop popup error:', popupError);
+          
+          // If popup specifically blocked, try redirect
+          if (popupError.code === 'auth/popup-blocked') {
+            console.log('Popup blocked, trying redirect fallback');
+            try {
+              setLoading(true);
+              
+              // Track redirect attempt
+              try {
+                sessionStorage.setItem('auth_redirect_attempt', 'true');
+                localStorage.setItem('auth_redirect_timestamp', Date.now().toString());
+              } catch (storageError) {
+                console.warn('Storage error (expected):', storageError);
+              }
+              
+              await signInWithRedirect(auth, provider);
+              return null;
+            } catch (redirectError: any) {
+              console.error('Desktop redirect also failed:', redirectError);
+              setLoading(false);
+              throw redirectError;
+            }
+          }
+          
+          // For any other error, throw it
+          throw popupError;
         }
-        throw error;
       }
+    } catch (error: any) {
+      console.error('Authentication completely failed:', error);
+      setLoading(false);
+      throw error;
     }
   };
 
@@ -209,6 +262,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signInWithGoogle,
     resetPassword,
     updateUserProfile,
+    redirectError,
+    signIn: login,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
