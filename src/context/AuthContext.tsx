@@ -105,18 +105,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Sign in with Google
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    // Add scopes or custom parameters if needed
+    // Configure Google provider for better mobile experience
     provider.setCustomParameters({
-      prompt: 'select_account'
+      // Always show account selector even if there's only one account
+      // This helps with consistent behavior across devices
+      prompt: 'select_account',
+      // Request OAuth offline access to improve token persistence
+      access_type: 'offline'
     });
     
     // First, try to detect if we're in a context that might have issues with popups
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const isMobile = typeof window !== 'undefined' && 
+      (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent));
     const isEmbedded = typeof window !== 'undefined' && window !== window.top;
     const hasStorageIssues = (() => {
       try {
         if (typeof window !== 'undefined') {
-          window.localStorage.getItem('test');
+          window.localStorage.setItem('auth_test', '1');
+          window.localStorage.removeItem('auth_test');
           return false;
         }
         return true;
@@ -130,6 +136,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         console.log('Using redirect sign-in for mobile or embedded context');
         setLoading(true);
+        
+        // Try to ensure cookies are enabled for auth state persistence
+        document.cookie = "auth_test=1; SameSite=Strict; Secure";
+        if (!document.cookie.includes("auth_test")) {
+          console.warn("Cookies appear to be disabled. Authentication session may not persist.");
+        } else {
+          document.cookie = "auth_test=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        }
+        
         await signInWithRedirect(auth, provider);
         return null; // User will be set by getRedirectResult in useEffect
       } catch (error: any) {

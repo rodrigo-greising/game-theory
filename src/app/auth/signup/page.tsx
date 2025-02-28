@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,45 +11,75 @@ export default function SignUpPage() {
   const [autoSignInAttempted, setAutoSignInAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isManuallySigningIn, setIsManuallySigningIn] = useState(false);
+  const [redirectPath, setRedirectPath] = useState('/');
 
+  // When mounted, check for a redirect path in URL search params
   useEffect(() => {
-    // Check if user is already signed in
-    if (user) {
-      router.push('/');
-      return;
-    }
-
-    // Auto-trigger Google sign-in when the page loads
-    const handleAutoSignIn = async () => {
-      if (autoSignInAttempted) return;
-      
-      setAutoSignInAttempted(true);
-      try {
-        await signInWithGoogle();
-        // Note: we don't need to manually redirect here as the AuthContext
-        // will update the user state, which will trigger the effect above
-      } catch (error) {
-        console.error('Error with automatic Google sign-in:', error);
-        setError('Auto sign-in failed. Please use the button below to sign in.');
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect');
+      if (redirect) {
+        // Save intended destination for after signup
+        setRedirectPath(redirect);
+        // Store in sessionStorage in case of page reload during auth
+        sessionStorage.setItem('authRedirectPath', redirect);
+      } else {
+        // Check if we have a stored redirect path
+        const storedRedirect = sessionStorage.getItem('authRedirectPath');
+        if (storedRedirect) {
+          setRedirectPath(storedRedirect);
+        }
       }
-    };
-
-    // Don't auto-trigger if auth is still loading
-    if (!loading && !autoSignInAttempted) {
-      handleAutoSignIn();
     }
-  }, [signInWithGoogle, router, loading, user, autoSignInAttempted]);
+  }, []);
+
+  // Separate effect for handling user changes
+  useEffect(() => {
+    if (user) {
+      console.log('User authenticated, redirecting to:', redirectPath);
+      // Clear the stored redirect path
+      sessionStorage.removeItem('authRedirectPath');
+      // Add a small delay to ensure the redirect happens after state updates
+      const redirectTimer = setTimeout(() => {
+        router.push(redirectPath);
+      }, 300);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [user, router, redirectPath]);
+
+  const attemptSignIn = useCallback(async () => {
+    if (autoSignInAttempted) return;
+    
+    setAutoSignInAttempted(true);
+    try {
+      console.log('Attempting auto sign-up with Google');
+      await signInWithGoogle();
+      // The user state will update, triggering the redirect effect above
+    } catch (error) {
+      console.error('Error with automatic Google sign-up:', error);
+      setError('Auto sign-up failed. Please use the button below to sign up.');
+    }
+  }, [autoSignInAttempted, signInWithGoogle]);
+
+  // Try auto sign-in when component loads
+  useEffect(() => {
+    if (!loading && !user && !autoSignInAttempted) {
+      attemptSignIn();
+    }
+  }, [loading, user, autoSignInAttempted, attemptSignIn]);
 
   const handleManualSignIn = async () => {
     setError(null);
     setIsManuallySigningIn(true);
     
     try {
+      console.log('Manual sign-up initiated');
       await signInWithGoogle();
-      // The redirect will happen in the useEffect when user state updates
+      // User state will update in AuthContext, triggering the redirect effect
     } catch (error) {
-      console.error('Error with manual Google sign-in:', error);
-      setError('Failed to sign in with Google. Please try again.');
+      console.error('Error with manual Google sign-up:', error);
+      setError('Failed to sign up with Google. Please try again.');
     } finally {
       setIsManuallySigningIn(false);
     }

@@ -1,5 +1,12 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence } from 'firebase/auth';
+import { 
+  getAuth, 
+  setPersistence, 
+  browserLocalPersistence, 
+  browserSessionPersistence, 
+  inMemoryPersistence,
+  indexedDBLocalPersistence
+} from 'firebase/auth';
 import { getAnalytics, Analytics } from 'firebase/analytics';
 import { getDatabase } from 'firebase/database';
 
@@ -28,42 +35,82 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const database = getDatabase(app);
 
-// Configure auth persistence with fallbacks
+// Configure auth persistence with improved mobile support
 if (typeof window !== 'undefined') {
-  // Check if we're in an iframe or cross-origin scenario
+  // Check browser environment and capabilities
+  const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
   const isIframe = window !== window.top;
-  const isThirdPartyCookiesBlocked = () => {
+  const hasLocalStorageAccess = (() => {
     try {
-      // Try to access localStorage to see if storage is available
-      window.localStorage.getItem('test');
-      return false;
-    } catch (e) {
+      window.localStorage.setItem('auth_test', '1');
+      window.localStorage.removeItem('auth_test');
       return true;
+    } catch (e) {
+      return false;
+    }
+  })();
+  const hasIndexedDBAccess = (() => {
+    if (typeof indexedDB === 'undefined') return false;
+    try {
+      // Simple test to see if IndexedDB is available and accessible
+      const request = indexedDB.open('auth_test');
+      request.onsuccess = (event) => {
+        const target = event.target as IDBOpenDBRequest;
+        if (target && target.result) {
+          const db = target.result;
+          db.close();
+          indexedDB.deleteDatabase('auth_test');
+        }
+      };
+      return true;
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  console.log(`Auth environment: Mobile: ${isMobile}, iFrame: ${isIframe}, LocalStorage: ${hasLocalStorageAccess}, IndexedDB: ${hasIndexedDBAccess}`);
+
+  // Set the most appropriate persistence method
+  const setPersistenceForEnvironment = async () => {
+    try {
+      // For mobile devices, try IndexedDB first (most reliable on modern mobile browsers)
+      if (isMobile && hasIndexedDBAccess) {
+        console.log('Setting persistence to INDEXED_DB for mobile');
+        await setPersistence(auth, indexedDBLocalPersistence);
+        return;
+      }
+
+      // For non-mobile with localStorage access
+      if (hasLocalStorageAccess && !isIframe) {
+        console.log('Setting persistence to LOCAL');
+        await setPersistence(auth, browserLocalPersistence);
+        return;
+      }
+
+      // For iframe or environments with localStorage issues, but with IndexedDB
+      if (hasIndexedDBAccess) {
+        console.log('Setting persistence to INDEXED_DB as fallback');
+        await setPersistence(auth, indexedDBLocalPersistence);
+        return;
+      }
+
+      // Session persistence as a fallback
+      console.log('Setting persistence to SESSION as fallback');
+      await setPersistence(auth, browserSessionPersistence);
+    } catch (error) {
+      console.warn('Failed to set preferred persistence, falling back to IN_MEMORY:', error);
+      try {
+        await setPersistence(auth, inMemoryPersistence);
+      } catch (finalError) {
+        console.error('Failed to set any persistence method:', finalError);
+      }
     }
   };
 
-  // Choose appropriate persistence method based on context
-  if (isIframe || isThirdPartyCookiesBlocked()) {
-    // In iframe or if third-party cookies are blocked, use in-memory persistence
-    setPersistence(auth, inMemoryPersistence)
-      .catch((error) => {
-        console.error('Failed to set IN_MEMORY persistence:', error);
-      });
-  } else {
-    // Try local persistence with fallbacks
-    setPersistence(auth, browserLocalPersistence)
-      .catch((error) => {
-        console.warn('Failed to set persistence to LOCAL, falling back to SESSION:', error);
-        return setPersistence(auth, browserSessionPersistence);
-      })
-      .catch((error) => {
-        console.warn('Failed to set persistence to SESSION, falling back to IN_MEMORY:', error);
-        return setPersistence(auth, inMemoryPersistence);
-      })
-      .catch((error) => {
-        console.error('Failed to set any persistence method:', error);
-      });
-  }
+  // Execute the persistence setup
+  setPersistenceForEnvironment().catch(error => {
+    console.error('Persistence initialization error:', error);
+  });
 }
 
 // Initialize Analytics only in the browser environment
