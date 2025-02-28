@@ -54,7 +54,7 @@ const PrisonersDilemma: Game = {
   getDefaultGameState: (): PrisonersDilemmaState => {
     return {
       round: 0,
-      maxRounds: 5,
+      maxRounds: 6,
       status: 'setup',
       playerData: {},
       history: []

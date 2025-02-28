@@ -11,6 +11,8 @@ export interface VolunteersDilemmaState extends GameState {
     volunteersCount: number;
     scores: Record<string, number>;
   }>;
+  benefitAll: number;
+  costVolunteer: number;
 }
 
 export type Decision = 'volunteer' | 'not_volunteer';
@@ -65,10 +67,12 @@ const VolunteersDilemma: Game = {
   getDefaultGameState: (): VolunteersDilemmaState => {
     return {
       round: 1,
-      maxRounds: 5,
+      maxRounds: 6,
       status: 'in_progress',
       playerData: {},
-      history: []
+      history: [],
+      benefitAll: 10, // Benefit to all if at least one volunteers
+      costVolunteer: 4 // Cost incurred by each volunteer
     };
   }
 };

@@ -55,7 +55,7 @@ const StagHunt: Game = {
   getDefaultGameState: (): StagHuntState => {
     return {
       round: 1,
-      maxRounds: 5,
+      maxRounds: 6,
       status: 'in_progress',
       playerData: {},
       history: []

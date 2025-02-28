@@ -9,8 +9,11 @@ import PrisonersDilemmaGame from '@/components/games/PrisonersDilemmaGame';
 import StagHuntGame from '@/components/games/StagHuntGame';
 import ChickenGame from '@/components/games/ChickenGame';
 import EventCoordinationGame from '@/components/games/EventCoordinationGame';
+import MatchingPenniesGame from '@/components/games/MatchingPenniesGame';
 import GameInfo from '@/components/games/GameInfo';
 import TournamentLeaderboard from '@/components/games/TournamentLeaderboard';
+import UltimatumGame from '@/components/games/UltimatumGame';
+import DictatorGame from '@/components/games/DictatorGame';
 
 export default function GamePage() {
   const { currentSession, loading, finishGame, currentUser } = useSession();
@@ -112,6 +115,18 @@ export default function GamePage() {
     
     if (gameId === 'battle-of-the-sexes') {
       return <EventCoordinationGame />;
+    }
+    
+    if (gameId === 'matching-pennies') {
+      return <MatchingPenniesGame />;
+    }
+
+    if (gameId === 'ultimatum-game') {
+      return <UltimatumGame />;
+    }
+    
+    if (gameId === 'dictator-game') {
+      return <DictatorGame />;
     }
     
     // Fallback for unrecognized games

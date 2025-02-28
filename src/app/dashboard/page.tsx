@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import CurrentSession from '@/components/sessions/CurrentSession';
+import TournamentRankings from '@/components/tournament/TournamentRankings';
 import { analytics } from '@/config/firebaseClient';
 import { logEvent, Analytics } from 'firebase/analytics';
 
@@ -69,6 +70,11 @@ export default function DashboardPage() {
             {currentSession ? (
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700">
                 <CurrentSession />
+                
+                {/* Show tournament rankings if in tournament mode */}
+                {currentSession.isTournament && (
+                  <TournamentRankings />
+                )}
               </div>
             ) : (
               <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl border border-gray-700 text-center">

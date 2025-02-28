@@ -59,9 +59,9 @@ const UltimatumGame: Game = {
   },
   getDefaultGameState: (): UltimatumGameState => {
     return {
-      round: 1,
-      maxRounds: 5,
-      status: 'in_progress',
+      round: 0,
+      maxRounds: 6,
+      status: 'setup',
       playerData: {},
       history: [],
       playerRoles: {},

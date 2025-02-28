@@ -10,6 +10,7 @@ export interface BattleOfTheSexesState extends GameState {
     decisions: Record<string, Preference>;
     scores: Record<string, number>;
   }>;
+  playerRoles: Record<string, Preference>;
 }
 
 export type Preference = 'opera' | 'football';
@@ -56,10 +57,11 @@ const BattleOfTheSexes: Game = {
   getDefaultGameState: (): BattleOfTheSexesState => {
     return {
       round: 1,
-      maxRounds: 5,
+      maxRounds: 6,
       status: 'in_progress',
       playerData: {},
-      history: []
+      history: [],
+      playerRoles: {} // Maps player IDs to roles (preferences)
     };
   }
 };

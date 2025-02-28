@@ -66,7 +66,7 @@ const BertrandCompetition: Game = {
   getDefaultGameState: (): BertrandCompetitionState => {
     return {
       round: 1,
-      maxRounds: 5,
+      maxRounds: 6,
       status: 'in_progress',
       playerData: {},
       history: [],
