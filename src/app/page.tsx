@@ -7,11 +7,13 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useSession } from "@/context/SessionContext";
 import CreateSession from "@/components/sessions/CreateSession";
-import SessionsList from "@/components/sessions/SessionsList";
 import MySessionsList from "@/components/sessions/MySessionsList";
 import { useRouter } from "next/navigation";
 import { analytics } from '@/config/firebaseClient';
 import { logEvent, Analytics } from 'firebase/analytics';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 export default function Home() {
   const { user, updateUserProfile, loading: authLoading } = useAuth();
@@ -19,8 +21,7 @@ export default function Home() {
   const [displayName, setDisplayName] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('join');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -62,32 +63,6 @@ export default function Home() {
     }
   };
 
-  const handleSelectSession = async (session: any) => {
-    try {
-      setJoinError(null);
-      console.log(`Attempting to join session: ${session.id}`);
-      
-      await joinSession(session.id);
-      console.log(`Successfully joined session: ${session.id}`);
-      
-      if (analytics) {
-        logEvent(analytics as Analytics, 'join_session', {
-          session_id: session.id,
-          user_id: user?.uid
-        });
-      }
-      
-      // Session joined successfully
-      setActiveTab('join');
-      
-      // Redirect to dashboard
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error('Error joining session:', error);
-      setJoinError(error.message || 'Failed to join session');
-    }
-  };
-
   const handleSessionCreated = (sessionId: string) => {
     if (analytics) {
       logEvent(analytics as Analytics, 'create_session', {
@@ -96,8 +71,9 @@ export default function Home() {
       });
     }
     
-    // Reset to join tab after successful creation
-    setActiveTab('join');
+    // Close modal and redirect to dashboard
+    setIsCreateModalOpen(false);
+    router.push('/dashboard');
   };
 
   return (
@@ -123,7 +99,7 @@ export default function Home() {
               <br /> for Everyone
             </h1>
             <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-8">
-              Create or join game sessions and challenge your strategic thinking against friends and rivals
+              Create game sessions and challenge your strategic thinking against friends and rivals
             </p>
             {!user && (
               <Link 
@@ -176,52 +152,43 @@ export default function Home() {
                 <MySessionsList />
               </div>
               
-              {/* Tabs */}
-              <div className="mb-6">
-                <div className="border-b border-gray-700">
-                  <nav className="flex -mb-px">
-                    <button
-                      onClick={() => setActiveTab('join')}
-                      className={`py-2 px-4 text-center flex-1 border-b-2 font-medium text-sm ${
-                        activeTab === 'join'
-                          ? 'border-purple-500 text-purple-500'
-                          : 'border-transparent text-gray-400 hover:text-gray-300'
-                      }`}
-                    >
-                      Join a Session
+              {/* Create Session Button & Modal */}
+              <div className="mb-8 flex flex-col items-center">
+                <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                  <DialogTrigger asChild>
+                    <button className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-full text-lg font-medium shadow-lg transform transition hover:scale-105">
+                      Create New Session
                     </button>
-                    <button
-                      onClick={() => setActiveTab('create')}
-                      className={`py-2 px-4 text-center flex-1 border-b-2 font-medium text-sm ${
-                        activeTab === 'create'
-                          ? 'border-purple-500 text-purple-500'
-                          : 'border-transparent text-gray-400 hover:text-gray-300'
-                      }`}
-                    >
-                      Create a Session
-                    </button>
-                  </nav>
-                </div>
+                  </DialogTrigger>
+                  <DialogContent className="bg-gray-800 text-white border border-gray-700 max-w-2xl">
+                    <DialogHeader>
+                      <div className="flex justify-between items-center">
+                        <DialogTitle className="text-xl font-semibold text-gray-200">Create a New Session</DialogTitle>
+                        <button 
+                          onClick={() => setIsCreateModalOpen(false)}
+                          className="text-gray-400 hover:text-white focus:outline-none"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <p className="text-gray-300 mb-4">
+                        Create a new game session and share the link or QR code with your friends to let them join.
+                      </p>
+                      <CreateSession onSessionCreated={handleSessionCreated} />
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
               
-              {/* Tab Content */}
-              <div className="mb-6">
-                {activeTab === 'join' ? (
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4 text-gray-200">Join a Session</h3>
-                    {joinError && (
-                      <div className="bg-red-900 bg-opacity-40 border border-red-700 text-red-200 p-3 rounded-lg mb-4">
-                        <p>{joinError}</p>
-                      </div>
-                    )}
-                    <SessionsList onSelectSession={handleSelectSession} />
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4 text-gray-200">Create a Session</h3>
-                    <CreateSession onSessionCreated={handleSessionCreated} />
-                  </div>
-                )}
+              {/* Join Session Info Section */}
+              <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+                <h3 className="text-lg font-medium mb-2 text-gray-200">How to Join a Session?</h3>
+                <p className="text-gray-300">
+                  Sessions can only be joined via a direct link or QR code shared by the session creator. 
+                  Ask your friends to share their session link with you to join their game.
+                </p>
               </div>
             </div>
           )}

@@ -8,6 +8,7 @@ import EditSession from './EditSession';
 import DeleteConfirmation from './DeleteConfirmation';
 import { analytics } from '@/config/firebaseClient';
 import { logEvent, Analytics } from 'firebase/analytics';
+import { Calendar, Users, Clock, AlertCircle } from 'lucide-react';
 
 interface MySessionsListProps {
   onSelectSession?: (session: GameSession) => void;
@@ -78,21 +79,35 @@ const MySessionsList: React.FC<MySessionsListProps> = ({ onSelectSession }) => {
       throw error;
     }
   };
+
+  // Helper function to get status style
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'waiting':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'playing':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
   
   if (loading) {
     return (
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <div className="p-4 rounded-lg shadow-md bg-gray-800/70">
         <div className="flex justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
         </div>
-        <p className="text-center mt-2 text-gray-500">Loading your sessions...</p>
+        <p className="text-center mt-2 text-gray-400">Loading your sessions...</p>
       </div>
     );
   }
   
   if (error) {
     return (
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md border-l-4 border-red-500">
+      <div className="p-4 rounded-lg shadow-md bg-gray-800/70 border-l-4 border-red-500">
         <p className="text-red-500">Error: {error}</p>
       </div>
     );
@@ -100,71 +115,89 @@ const MySessionsList: React.FC<MySessionsListProps> = ({ onSelectSession }) => {
   
   if (userSessions.length === 0) {
     return (
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        <p className="text-center text-gray-500">You haven't created or joined any sessions yet.</p>
-        <p className="text-center text-gray-500 text-sm mt-1">Create a new session to get started!</p>
+      <div className="p-6 rounded-lg shadow-md bg-gray-800/70 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-gray-500 mb-3" />
+        <p className="text-gray-300">You haven't created or joined any sessions yet.</p>
+        <p className="text-gray-400 text-sm mt-1">Create a new session to get started!</p>
       </div>
     );
   }
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold p-4 border-b border-gray-200 dark:border-gray-700">
-        Your Sessions
-      </h3>
-      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {userSessions.map((session) => (
-          <li 
+          <div 
             key={session.id} 
-            className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+            className="bg-gray-800/70 border border-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 hover:border-purple-500/50 cursor-pointer"
             onClick={() => handleSelectSession(session)}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{session.name}</p>
-                <p className="text-sm text-gray-500">
-                  Players: {Object.keys(session.players || {}).length}
-                </p>
-                <div className="text-xs text-gray-400 flex items-center mt-1">
-                  <span className={`mr-2 px-2 py-0.5 rounded-full ${
-                    session.status === 'waiting' ? 'bg-yellow-100 text-yellow-800' :
-                    session.status === 'playing' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                  </span>
-                  <span>Created: {new Date(session.createdAt).toLocaleString()}</span>
+            {/* Card Header with Status */}
+            <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg text-white truncate">{session.name}</h3>
+                <span className={`text-xs px-2 py-1 rounded-full ${getStatusStyle(session.status)}`}>
+                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                </span>
+              </div>
+            </div>
+            
+            {/* Card Body */}
+            <div className="p-4">
+              {/* Game Info */}
+              <p className="text-gray-300 text-sm mb-4 line-clamp-2 h-10">
+                {session.gameData ? `Game: ${session.gameData.gameId}` : "Session ready to play"}
+              </p>
+              
+              {/* Session Details */}
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center text-gray-400">
+                  <Users size={16} className="mr-2" />
+                  <span>{Object.keys(session.players || {}).length} Players</span>
+                </div>
+                
+                <div className="flex items-center text-gray-400">
+                  <Calendar size={16} className="mr-2" />
+                  <span>Created: {new Date(session.createdAt).toLocaleDateString()}</span>
+                </div>
+                
+                <div className="flex items-center text-gray-400">
+                  <Clock size={16} className="mr-2" />
+                  <span>{new Date(session.createdAt).toLocaleTimeString()}</span>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                {/* Only show edit/delete buttons if the user is the creator of the session */}
+            </div>
+            
+            {/* Card Actions */}
+            <div className="p-3 bg-gray-900/50 border-t border-gray-700 flex justify-between">
+              <div>
                 {session.createdBy === user?.uid && (
                   <>
                     <button
                       onClick={(e) => handleEditSession(session, e)}
-                      className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-md text-sm"
+                      className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded-md text-sm mr-2"
                     >
                       Edit
                     </button>
                     <button
                       onClick={(e) => handleDeleteSession(session, e)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm"
+                      className="bg-red-900/80 hover:bg-red-800 text-white px-3 py-1 rounded-md text-sm"
                     >
                       Delete
                     </button>
                   </>
                 )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleSelectSession(session); }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm"
-                >
-                  {session.status === 'waiting' ? 'Continue' : 'View'}
-                </button>
               </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSelectSession(session); }}
+                className="bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm"
+              >
+                {session.status === 'waiting' ? 'Continue' : 'View'}
+              </button>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
       {/* Edit Session Modal */}
       {sessionToEdit && (

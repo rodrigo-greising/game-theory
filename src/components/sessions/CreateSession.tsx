@@ -4,10 +4,43 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 import { getGameOptions } from '@/games/gameRegistry';
 import { GameOption } from '@/types/games';
+import { 
+  Users, 
+  Award, 
+  AlertTriangle, 
+  TrendingUp, 
+  Handshake, 
+  GitMerge,
+  Scissors,
+  Zap,
+  BarChart,
+  LucideIcon 
+} from 'lucide-react';
 
 interface CreateSessionProps {
   onSessionCreated?: (sessionId: string) => void;
 }
+
+// Game icon mapping
+const gameIcons: Record<string, React.ReactNode> = {
+  'prisoners-dilemma': <GitMerge className="w-6 h-6" />,
+  'stag-hunt': <Handshake className="w-6 h-6" />,
+  'chicken': <AlertTriangle className="w-6 h-6" />,
+  'battle-of-sexes': <TrendingUp className="w-6 h-6" />,
+  'matching-pennies': <Award className="w-6 h-6" />,
+  'ultimatum-game': <Users className="w-6 h-6" />,
+  'dictator-game': <Award className="w-6 h-6" />,
+  'public-goods-game': <Users className="w-6 h-6" />,
+  'centipede-game': <GitMerge className="w-6 h-6" />,
+  'travelers-dilemma': <TrendingUp className="w-6 h-6" />,
+  'coordination-game': <Handshake className="w-6 h-6" />,
+  'volunteers-dilemma': <Users className="w-6 h-6" />,
+  'rock-paper-scissors': <Scissors className="w-6 h-6" />,
+  'bertrand-competition': <BarChart className="w-6 h-6" />,
+  'cournot-competition': <Zap className="w-6 h-6" />,
+  // Default icon for any new games
+  'default': <GitMerge className="w-6 h-6" />
+};
 
 const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
   const [sessionName, setSessionName] = useState('');
@@ -73,6 +106,11 @@ const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
       setIsCreating(false);
     }
   };
+
+  // Helper to get game icon
+  const getGameIcon = (gameId: string) => {
+    return gameIcons[gameId] || gameIcons['default'];
+  };
   
   return (
     <div className="bg-gray-800 rounded-lg shadow-lg p-6">
@@ -96,27 +134,53 @@ const CreateSession: React.FC<CreateSessionProps> = ({ onSessionCreated }) => {
         </div>
         
         <div className="mb-4">
-          <label htmlFor="gameSelect" className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Select Game
           </label>
-          <select
-            id="gameSelect"
-            className="w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 bg-gray-700 text-white"
-            value={selectedGameId}
-            onChange={(e) => setSelectedGameId(e.target.value)}
-            disabled={isCreating || gameOptions.length === 0}
-            required
-          >
-            {gameOptions.length === 0 ? (
-              <option value="">No games available</option>
-            ) : (
-              gameOptions.map(game => (
-                <option key={game.id} value={game.id}>
-                  {game.name} ({game.minPlayers}-{game.maxPlayers} players)
-                </option>
-              ))
-            )}
-          </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
+            {gameOptions.map(game => (
+              <div 
+                key={game.id}
+                className={`
+                  border rounded-lg p-3 cursor-pointer transition-colors
+                  ${selectedGameId === game.id 
+                    ? 'bg-purple-700/30 border-purple-500' 
+                    : 'bg-gray-700/50 border-gray-600 hover:border-gray-500'}
+                `}
+                onClick={() => setSelectedGameId(game.id)}
+              >
+                <div className="flex items-center">
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center mr-3
+                    ${selectedGameId === game.id ? 'bg-purple-600' : 'bg-gray-600'}
+                  `}>
+                    {getGameIcon(game.id)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center">
+                      <input 
+                        type="radio" 
+                        name="gameOption" 
+                        id={`game-${game.id}`}
+                        className="h-4 w-4 text-purple-600 focus:ring-purple-500"
+                        checked={selectedGameId === game.id}
+                        onChange={() => setSelectedGameId(game.id)}
+                      />
+                      <label htmlFor={`game-${game.id}`} className="ml-2 text-sm font-medium text-white truncate">
+                        {game.name}
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {game.minPlayers === game.maxPlayers 
+                        ? `${game.minPlayers} players` 
+                        : `${game.minPlayers}-${game.maxPlayers} players`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
         
         <div className="mb-4">
