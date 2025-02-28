@@ -471,7 +471,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
         }
         
         // For Centipede Game or Travelers Dilemma, initialize with player-specific data
-        if ((game.id === 'centipede-game' || game.id === 'travelers-dilemma') && game.initializeGame) {
+        if ((game.id === 'centipede-game' || game.id === 'travelers-dilemma' || game.id === 'bertrand-competition' || game.id === 'cournot-competition') && game.initializeGame) {
           const updatedGameState = game.initializeGame(initialGameState, playerIds);
           // Update session status to playing and set initial game state
           await update(ref(database, `sessions/${currentSession.id}`), {

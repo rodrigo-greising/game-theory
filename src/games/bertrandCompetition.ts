@@ -75,6 +75,32 @@ const BertrandCompetition: Game = {
       marginalCost: 10,
       marketDemand: 100
     };
+  },
+  
+  // Initialize the game for the specific players
+  initializeGame: (gameState: BertrandCompetitionState, playerIds: string[]): BertrandCompetitionState => {
+    // Make sure there are at least 2 players
+    if (playerIds.length < 2) {
+      throw new Error('Bertrand Competition requires at least 2 players');
+    }
+    
+    // Initialize player data
+    const playerData: Record<string, BertrandPlayerData> = {};
+    playerIds.forEach(playerId => {
+      playerData[playerId] = {
+        totalScore: 0,
+        currentPrice: null,
+        ready: false
+      };
+    });
+    
+    return {
+      ...gameState,
+      playerData,
+      status: 'in_progress',
+      round: 1,
+      history: []
+    };
   }
 };
 

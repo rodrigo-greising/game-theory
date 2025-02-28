@@ -16,6 +16,11 @@ import GameInfo from '@/components/games/GameInfo';
 import TournamentLeaderboard from '@/components/games/TournamentLeaderboard';
 import UltimatumGame from '@/components/games/UltimatumGame';
 import DictatorGame from '@/components/games/DictatorGame';
+import CoordinationGame from '@/components/games/CoordinationGame';
+import VolunteersDilemmaGame from '@/components/games/VolunteersDilemmaGame';
+import RockPaperScissorsGame from '@/components/games/RockPaperScissorsGame';
+import BertrandCompetitionGame from '@/components/games/BertrandCompetitionGame';
+import CournotCompetitionGame from '@/components/games/CournotCompetitionGame';
 
 export default function GamePage() {
   const { currentSession, loading, finishGame, currentUser } = useSession();
@@ -134,9 +139,29 @@ export default function GamePage() {
     if (gameId === 'dictator-game') {
       return <DictatorGame />;
     }
+
+    if (gameId === 'volunteers-dilemma') {
+      return <VolunteersDilemmaGame />;
+    }
     
     if (gameId === 'centipede-game') {
       return <CentipedeGame />;
+    }
+    
+    if (gameId === 'coordination-game') {
+      return <CoordinationGame />;
+    }
+    
+    if (gameId === 'rock-paper-scissors') {
+      return <RockPaperScissorsGame />;
+    }
+    
+    if (gameId === 'bertrand-competition') {
+      return <BertrandCompetitionGame />;
+    }
+    
+    if (gameId === 'cournot-competition') {
+      return <CournotCompetitionGame />;
     }
     
     // Fallback for unrecognized games

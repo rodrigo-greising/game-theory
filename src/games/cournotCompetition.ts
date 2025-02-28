@@ -77,6 +77,32 @@ const CournotCompetition: Game = {
       demandIntercept: 100,
       demandSlope: 1
     };
+  },
+  
+  // Initialize the game for the specific players
+  initializeGame: (gameState: CournotCompetitionState, playerIds: string[]): CournotCompetitionState => {
+    // Make sure there are at least 2 players
+    if (playerIds.length < 2) {
+      throw new Error('Cournot Competition requires at least 2 players');
+    }
+    
+    // Initialize player data
+    const playerData: Record<string, CournotPlayerData> = {};
+    playerIds.forEach(playerId => {
+      playerData[playerId] = {
+        totalScore: 0,
+        currentQuantity: null,
+        ready: false
+      };
+    });
+    
+    return {
+      ...gameState,
+      playerData,
+      status: 'in_progress',
+      round: 1,
+      history: []
+    };
   }
 };
 
