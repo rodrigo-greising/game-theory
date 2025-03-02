@@ -21,6 +21,7 @@ import VolunteersDilemmaGame from '@/components/games/VolunteersDilemmaGame';
 import RockPaperScissorsGame from '@/components/games/RockPaperScissorsGame';
 import BertrandCompetitionGame from '@/components/games/BertrandCompetitionGame';
 import CournotCompetitionGame from '@/components/games/CournotCompetitionGame';
+import PublicGoodsGame from '@/components/games/PublicGoodsGame';
 
 export default function GamePage() {
   const { currentSession, loading, finishGame, currentUser } = useSession();
@@ -162,6 +163,10 @@ export default function GamePage() {
     
     if (gameId === 'cournot-competition') {
       return <CournotCompetitionGame />;
+    }
+
+    if (gameId === 'public-goods-game') {
+      return <PublicGoodsGame />;
     }
     
     // Fallback for unrecognized games

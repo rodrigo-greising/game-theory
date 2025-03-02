@@ -235,11 +235,11 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
     // Create the round result
     const roundResult = {
       round: currentState.round,
-      totalContribution,
-      publicGood,
-      individualReturn,
       contributions: {} as Record<string, number>,
-      netGains: {} as Record<string, number>
+      publicPool: totalContribution,
+      multiplier: currentState.multiplier,
+      returns: {} as Record<string, number>,
+      scores: {} as Record<string, number>
     };
     
     // Calculate net gains for each player
@@ -254,7 +254,10 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       
       // Calculate net gain: what they get back minus what they contributed
       const netGain = individualReturn - contribution;
-      roundResult.netGains[playerId] = netGain;
+      
+      // Store individual returns and scores in history
+      roundResult.returns[playerId] = individualReturn;
+      roundResult.scores[playerId] = netGain;
       
       // Update player's total score and reset for next round
       updatedPlayerData[playerId] = {
@@ -482,17 +485,17 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-white dark:bg-gray-700 rounded-lg">
                   <p className="text-sm text-gray-500 mb-1">Contribución Total</p>
-                  <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].totalContribution}</p>
+                  <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].publicPool}</p>
                 </div>
                 <div className="p-3 bg-white dark:bg-gray-700 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-1">Fondo Común (x{gameState.multiplier})</p>
-                  <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].publicGood}</p>
+                  <p className="text-sm text-gray-500 mb-1">Fondo Común (x{gameState.history[gameState.history.length - 1].multiplier})</p>
+                  <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].publicPool * gameState.history[gameState.history.length - 1].multiplier}</p>
                 </div>
               </div>
               
               <div className="p-3 bg-white dark:bg-gray-700 rounded-lg text-center">
                 <p className="text-sm text-gray-500 mb-1">Retorno Individual</p>
-                <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].individualReturn}</p>
+                <p className="text-xl font-semibold">{gameState.history[gameState.history.length - 1].returns[currentPlayerId]}</p>
               </div>
             </div>
             
@@ -539,16 +542,16 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
                   if (!currentPlayerId) return null;
                   
                   const playerContribution = round.contributions[currentPlayerId] || 0;
-                  const playerNetGain = round.netGains[currentPlayerId] || 0;
+                  const playerNetGain = round.scores[currentPlayerId] || 0;
                   
                   return (
                     <tr key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-0">
                       <td className="py-2">{round.round}</td>
                       <td className="py-2 text-right">{playerContribution}</td>
-                      <td className="py-2 text-right">{round.totalContribution}</td>
-                      <td className="py-2 text-right">{round.publicGood}</td>
-                      <td className="py-2 text-right" className={`py-2 text-right ${playerNetGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {playerNetGain >= 0 ? '+' : ''}{round.individualReturn} ({playerNetGain >= 0 ? '+' : ''}{playerNetGain})
+                      <td className="py-2 text-right">{round.publicPool}</td>
+                      <td className="py-2 text-right">{round.publicPool * round.multiplier}</td>
+                      <td className={`py-2 text-right ${playerNetGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {playerNetGain >= 0 ? '+' : ''}{round.returns[currentPlayerId]} ({playerNetGain >= 0 ? '+' : ''}{playerNetGain})
                       </td>
                     </tr>
                   );
