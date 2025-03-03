@@ -252,8 +252,10 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       // Record contribution for history
       roundResult.contributions[playerId] = contribution;
       
-      // Calculate net gain: what they get back minus what they contributed
-      const netGain = individualReturn - contribution;
+      // Calculate net gain: what they keep plus their return from the public pool
+      // Players keep what they don't contribute (initialEndowment - contribution)
+      // and also get their share of the public good (individualReturn)
+      const netGain = (currentState.initialEndowment - contribution) + individualReturn;
       
       // Store individual returns and scores in history
       roundResult.returns[playerId] = individualReturn;
@@ -261,7 +263,7 @@ const PublicGoodsGame: React.FC<PublicGoodsGameProps> = ({ onGameUpdate }) => {
       
       // Update player's total score and reset for next round
       updatedPlayerData[playerId] = {
-        totalScore: (playerData?.totalScore || 0) + individualReturn,
+        totalScore: (playerData?.totalScore || 0) + netGain - currentState.initialEndowment,
         currentContribution: null,
         ready: false
       };

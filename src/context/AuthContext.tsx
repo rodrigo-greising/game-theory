@@ -1,33 +1,21 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  sendPasswordResetEmail,
-  updateProfile
-} from 'firebase/auth';
-import { auth } from '@/config/firebaseClient';
+
+// Simple user interface to replace Firebase User
+export interface SimpleUser {
+  uid: string;
+  displayName: string;
+  isAnonymous: boolean;
+}
 
 // Define the auth context type
 type AuthContextType = {
-  user: User | null;
+  user: SimpleUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  signup: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
-  signInWithGoogle: () => Promise<User | null>;
-  resetPassword: (email: string) => Promise<void>;
-  updateUserProfile: (profileData: { displayName?: string; photoURL?: string }) => Promise<void>;
-  redirectError: Error | null;
-  signIn: (email: string, password: string) => Promise<User>;
+  getOrCreateAnonymousUser: () => Promise<SimpleUser>;
+  updateUserProfile: (profileData: { displayName?: string }) => Promise<void>;
 };
 
 // Create the context with a default value
@@ -42,212 +30,103 @@ export const useAuth = () => {
   return context;
 };
 
+// Generate a random ID
+const generateRandomId = () => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
 // Provider component
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SimpleUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [redirectError, setRedirectError] = useState<Error | null>(null);
-  const [redirectChecked, setRedirectChecked] = useState(false);
 
+  // Check for existing user in localStorage on component mount
   useEffect(() => {
-    // A much more reliable method for handling redirects
-    const checkRedirectResult = async () => {
-      setLoading(true);
-      
+    const loadUser = () => {
       try {
-        console.log('Checking for redirect result');
-        
-        // Web research suggests a simpler approach: just try to get the redirect result 
-        // and have a fallback to check auth.currentUser
-        const result = await getRedirectResult(auth)
-          .catch(error => {
-            console.warn('Error during getRedirectResult:', error);
-            return null; // Continue with null on error
-          });
-        
-        if (result && result.user) {
-          console.log('Successfully processed redirect sign-in');
-          setUser(result.user);
-        } else {
-          console.log('No redirect result found, checking currentUser');
-          // Check if user is already signed in
-          if (auth.currentUser) {
-            console.log('User already signed in:', auth.currentUser.displayName);
-            setUser(auth.currentUser);
-          } else {
-            console.log('No user found');
-          }
+        const storedUser = localStorage.getItem('gameTheoryUser');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('Error in redirect result handling:', error);
-        // Don't set redirect error for storage access errors
-        const err = error as Error;
-        if (!err.message?.includes('storage') && !err.message?.includes('context')) {
-          setRedirectError(err);
-        }
+        console.error('Error loading user from localStorage:', error);
       } finally {
-        setRedirectChecked(true);
-        // Keep loading true until the auth state is also checked
+        setLoading(false);
       }
     };
     
-    // Check for redirect results first - important to do this in client-side only
+    // Execute in client side only
     if (typeof window !== 'undefined') {
-      checkRedirectResult();
+      loadUser();
     } else {
-      setRedirectChecked(true);
-    }
-    
-    // Always set up the auth state listener
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        console.log('Auth state changed: user is signed in');
-      } else {
-        console.log('Auth state changed: no user');
-      }
-      setUser(currentUser);
       setLoading(false);
-    });
-    
-    // Clean up on unmount
-    return () => unsubscribe();
+    }
   }, []);
 
-  // Sign in with email and password
-  const login = async (email: string, password: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
-  };
-
-  // Create a new user with email and password
-  const signup = async (email: string, password: string) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    return result.user;
+  // Create a new anonymous user or return the existing one
+  const getOrCreateAnonymousUser = async (): Promise<SimpleUser> => {
+    setLoading(true);
+    
+    try {
+      // Check if we already have a user
+      if (user) {
+        return user;
+      }
+      
+      // Generate new anonymous user
+      const newUser: SimpleUser = {
+        uid: generateRandomId(),
+        displayName: `Player_${generateRandomId().substring(0, 6)}`,
+        isAnonymous: true
+      };
+      
+      // Store in localStorage
+      try {
+        localStorage.setItem('gameTheoryUser', JSON.stringify(newUser));
+      } catch (error) {
+        console.warn('Could not store user in localStorage', error);
+      }
+      
+      // Update state
+      setUser(newUser);
+      return newUser;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Sign out
-  const logout = () => {
-    return signOut(auth);
-  };
-
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    // Always clear any previous redirect errors
-    setRedirectError(null);
-    
-    const provider = new GoogleAuthProvider();
-    
-    // Based on Firebase docs, use MINIMAL scopes to reduce cross-origin issues
-    provider.setCustomParameters({
-      // Force account selection to avoid silent sign-in issues
-      prompt: 'select_account'
-    });
-    
-    // Simple mobile detection - avoid complex checks that may fail
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
-    
-    console.log(`Device type detected: ${isMobile ? 'mobile' : 'desktop'}`);
-    
+  const logout = async (): Promise<void> => {
     try {
-      // For mobile: ALWAYS use POPUP first, then fallback to redirect if needed
-      // (This is opposite to common advice but works better according to search results)
-      if (isMobile) {
-        console.log('Using popup for mobile device (recommended by Firebase support)');
-        try {
-          // Try popup first even on mobile - this is counterintuitive but 
-          // works better according to web search
-          const result = await signInWithPopup(auth, provider);
-          return result.user;
-        } catch (popupError: any) {
-          console.log('Mobile popup failed, falling back to redirect:', popupError);
-          
-          // Only use redirect as fallback on mobile
-          try {
-            setLoading(true);
-            
-            // Track the redirect attempt
-            try {
-              sessionStorage.setItem('auth_redirect_attempt', 'true');
-              localStorage.setItem('auth_redirect_timestamp', Date.now().toString());
-            } catch (storageError) {
-              console.warn('Storage error (expected on some browsers):', storageError);
-            }
-            
-            // Before redirecting, set a flag in the auth object if possible
-            // @ts-ignore - Firebase internal property
-            if (auth.persistenceManager) {
-              console.log('Setting up persistence manager for redirect');
-            }
-            
-            console.log('Starting redirect flow as fallback');
-            await signInWithRedirect(auth, provider);
-            return null;
-          } catch (redirectError: any) {
-            console.error('Mobile redirect also failed:', redirectError);
-            setLoading(false);
-            throw redirectError;
-          }
-        }
-      } 
-      // For desktop, use popup (more reliable)
-      else {
-        console.log('Using popup auth for desktop');
-        try {
-          const result = await signInWithPopup(auth, provider);
-          return result.user;
-        } catch (popupError: any) {
-          console.error('Desktop popup error:', popupError);
-          
-          // If popup specifically blocked, try redirect
-          if (popupError.code === 'auth/popup-blocked') {
-            console.log('Popup blocked, trying redirect fallback');
-            try {
-              setLoading(true);
-              
-              // Track redirect attempt
-              try {
-                sessionStorage.setItem('auth_redirect_attempt', 'true');
-                localStorage.setItem('auth_redirect_timestamp', Date.now().toString());
-              } catch (storageError) {
-                console.warn('Storage error (expected):', storageError);
-              }
-              
-              await signInWithRedirect(auth, provider);
-              return null;
-            } catch (redirectError: any) {
-              console.error('Desktop redirect also failed:', redirectError);
-              setLoading(false);
-              throw redirectError;
-            }
-          }
-          
-          // For any other error, throw it
-          throw popupError;
-        }
-      }
-    } catch (error: any) {
-      console.error('Authentication completely failed:', error);
-      setLoading(false);
+      // Remove from localStorage
+      localStorage.removeItem('gameTheoryUser');
+      
+      // Clear user state
+      setUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
       throw error;
     }
   };
 
-  // Reset password
-  const resetPassword = (email: string) => {
-    return sendPasswordResetEmail(auth, email);
-  };
-
   // Update user profile
-  const updateUserProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
+  const updateUserProfile = async (profileData: { displayName?: string }): Promise<void> => {
     if (!user) {
       throw new Error('No user is signed in');
     }
     
     try {
-      await updateProfile(user, profileData);
-      // Force refresh the user object
-      setUser({ ...user });
-    } catch (error: any) {
+      const updatedUser = {
+        ...user,
+        ...profileData
+      };
+      
+      // Update localStorage
+      localStorage.setItem('gameTheoryUser', JSON.stringify(updatedUser));
+      
+      // Update state
+      setUser(updatedUser);
+    } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
     }
@@ -256,14 +135,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value = {
     user,
     loading,
-    login,
-    signup,
     logout,
-    signInWithGoogle,
-    resetPassword,
-    updateUserProfile,
-    redirectError,
-    signIn: login,
+    getOrCreateAnonymousUser,
+    updateUserProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

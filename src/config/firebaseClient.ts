@@ -1,15 +1,4 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { 
-  getAuth, 
-  setPersistence, 
-  browserLocalPersistence,
-  indexedDBLocalPersistence,
-  browserSessionPersistence,
-  inMemoryPersistence,
-  browserPopupRedirectResolver,
-  initializeAuth,
-  Auth
-} from 'firebase/auth';
 import { getAnalytics, Analytics } from 'firebase/analytics';
 import { getDatabase } from 'firebase/database';
 
@@ -38,33 +27,6 @@ const app = getApps().length
   ? getApp() 
   : initializeApp(firebaseConfig);
 
-// CRITICAL FIX: Use initializeAuth instead of getAuth
-// This prevents the iframe loading issue causing cross-origin problems
-let auth: Auth;
-if (typeof window !== 'undefined') {
-  try {
-    // This approach is recommended by Firebase for apps with CORS issues
-    console.log('Initializing Firebase Auth with custom settings for better cross-browser support');
-    auth = initializeAuth(app, {
-      // Explicitly specify persistence methods in order of preference
-      persistence: [
-        indexedDBLocalPersistence, // Try IndexedDB first (better for desktop)
-        browserLocalPersistence,   // Then localStorage
-        browserSessionPersistence  // Then sessionStorage as fallback
-      ],
-      // Explicitly use the popup redirect resolver
-      popupRedirectResolver: browserPopupRedirectResolver
-    });
-    console.log('Firebase Auth initialized with custom settings');
-  } catch (authInitError) {
-    console.warn('Failed to initialize Auth with custom settings, falling back to default:', authInitError);
-    auth = getAuth(app);
-  }
-} else {
-  // Server-side - just use basic setup
-  auth = getAuth(app);
-}
-
 // Initialize other Firebase services
 const database = getDatabase(app);
 
@@ -78,4 +40,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export { app, auth, database, analytics }; 
+export { app, database, analytics }; 

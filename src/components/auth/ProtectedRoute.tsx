@@ -10,40 +10,42 @@ interface ProtectedRouteProps {
 }
 
 /**
- * A wrapper component that protects routes from unauthenticated access
- * Usage:
- * <ProtectedRoute>
- *   <YourSecurePage />
- * </ProtectedRoute>
+ * A wrapper component that ensures a user exists before showing content
+ * With our new anonymous auth system, this primarily ensures a user ID exists
+ * before accessing protected routes
  */
 const ProtectedRoute = ({ children, fallback }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, getOrCreateAnonymousUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Only perform the redirect after authentication state is confirmed
+    // Only check if we need to create a user after auth state is loaded
     if (!loading) {
-      setIsAuthChecked(true);
-      
-      // If user is not authenticated and no fallback is provided, redirect to login
-      if (!user && !fallback) {
-        console.log('User not authenticated, redirecting to login page');
-        
-        // Encode the current path to redirect back after login
-        const encodedRedirect = encodeURIComponent(pathname);
-        
-        // Store the redirect path in sessionStorage for persistence across auth flow
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('authRedirectPath', pathname);
+      const checkOrCreateUser = async () => {
+        if (!user) {
+          console.log('No user found, creating anonymous user');
+          try {
+            await getOrCreateAnonymousUser();
+          } catch (error) {
+            console.error('Error creating anonymous user:', error);
+            
+            // If we can't create a user and no fallback is provided, redirect to login
+            if (!fallback) {
+              // Encode the current path to redirect back after login
+              const encodedRedirect = encodeURIComponent(pathname);
+              router.push(`/auth/signin?redirect=${encodedRedirect}`);
+              return;
+            }
+          }
         }
-        
-        // Redirect to login with the intended destination
-        router.push(`/auth/signin?redirect=${encodedRedirect}`);
-      }
+        setIsAuthChecked(true);
+      };
+      
+      checkOrCreateUser();
     }
-  }, [user, loading, fallback, router, pathname]);
+  }, [user, loading, getOrCreateAnonymousUser, fallback, router, pathname]);
 
   // Show loading state while authentication is being checked
   if (loading || !isAuthChecked) {
@@ -54,12 +56,12 @@ const ProtectedRoute = ({ children, fallback }: ProtectedRouteProps) => {
     );
   }
 
-  // If not authenticated but fallback is provided, show the fallback
+  // If still no user after attempting to create one and fallback is provided, show the fallback
   if (!user && fallback) {
     return <>{fallback}</>;
   }
 
-  // User is authenticated, show the protected content
+  // User exists, show the protected content
   return <>{children}</>;
 };
 
